@@ -28,7 +28,7 @@ RTS_SUB
         MOVE.B    #0,D6      ; clear D6
         JSR       DECODE_RTS
         CMP.B     #1,D6         ; D6 =1 if opcode is valid    
-        BEQ       OPCODEMATCH  ;return to main. otherwise, compare to next opcode subroutine 
+        BEQ       DONEDECODE  ;return to main. otherwise, compare to next opcode subroutine 
         
         
         
@@ -36,7 +36,7 @@ NOTMATCH
 *need more operations to keep the previous data in stack  
         RTS        
 
-OPCODEMATCH
+DONEDECODE
         RTS        
         
         
