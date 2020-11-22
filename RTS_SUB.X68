@@ -32,12 +32,7 @@ RTS_SUB
         
         
         
-NOTMATCH  
-*need more operations to keep the previous data in stack  
-        RTS        
-
-DONEDECODE
-        RTS        
+    
         
         
         
@@ -58,7 +53,7 @@ RTS_COPY
         MOVE.B    (A3)+,(A2)+   ; add output string to current output address, then increase by 1
         BRA       RTS_COPY      ; loop until everything is copied
         
-OUTPUT_FORMATTING
+RTS_FORMATTING
 *-------------------------
 *1.adding space and 'RTS' to the output address
 *then we can use trap to display the ouput
@@ -69,6 +64,13 @@ OUTPUT_FORMATTING
 
         RTS       
 
+
+NOTMATCH  
+*need more operations to keep the previous data in stack  
+        RTS        
+
+DONEDECODE
+        RTS    
 
 
 
