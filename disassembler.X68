@@ -1,78 +1,89 @@
-lf          equ         $0A
-cr          equ         $0D
+*****************************
+*
+* disassembler.X68
+*
+* Created 11/20/2020
+*
+* CSS 422 Disassembler Project - Team Terminal
+*
+*****************************
 
-start       org         $1000
+LF          EQU         $0A
+CR          EQU         $0D
 
-            move.l      #$6000,a1
-            move.l      #$5000,a2
-            move.b      #0,d7
+START       ORG         $1000
 
-            lea         wlc,a1
-            move.b      #14,d0
-            trap        #15         ;   print welcome message
+            MOVE.L      #$6000,A1
+            MOVE.L      #$5000,A2
+            MOVE.B      #0,D7
+
+            LEA         WLC,A1
+            MOVE.B      #14,D0
+            TRAP        #15         ;   print welcome message
 
 
-restart     lea         saddr,a1
-            move.b      #14,d0
-            trap        #15         ;   ask for starting address
+RESTART     LEA         SADDR,A1
+            MOVE.B      #14,D0
+            TRAP        #15         ;   ask for starting address
             
-            move.b      #2,d0
-            trap        #15         ;   read number from keyboard into $6000
+            MOVE.B      #2,D0
+            TRAP        #15         ;   read number from keyboard into $6000
             
-decode      move.b      (a1)+,d1
-            cmpi.b      #$30,d1     ;   is d1 < 30
-            blt.b       inv         ;   then invalid
-            cmp.b       #$39,d1     ;   is d1 <= 39
-            ble.b       noltr       ;   if so, it's not a letter (so branch)
+DECODE      MOVE.B      (A1)+,D1
+            CMPI.B      #$30,D1     ;   is D1 < 30
+            BLT.B       INV         ;   then invalid
+            CMP.B       #$39,D1     ;   is D1 <= 39
+            BLE.B       NOLTR       ;   if so, it's not a letter (so branch)
         
-            cmpi.b      #$41,d1     ;   is d1 < 41
-            blt.b       inv         ;   then invalid
-            cmpi.b      #$46,d1     ;   is d1 > 46
-            bgt.b       inv         ;   then invalid
-            subi.b      #$37,d1     ;   subtract 37 from d1
-            bra         ltr         ;   finished with this letter
+            CMPI.B      #$41,D1     ;   is D1 < 41
+            BLT.B       INV         ;   then invalid
+            CMPI.B      #$46,D1     ;   is D1 > 46
+            BGT.B       INV         ;   then invalid
+            SUBI.B      #$37,D1     ;   subtract 37 from D1
+            BRA         LTR         ;   finished with this letter
 
-noltr       subi.b      #$30,d1     ;   if it's a number subtract 30
+NOLTR       SUBI.B      #$30,D1     ;   if it's a number subtract 30
 
-ltr         move.b      d1,(a2)+    ;   throw byte into $5000s
-            addi.b      #1,d7
-            cmpi.b      #8,d7
-            beq         fsaddr      ;   finished decoding
-            bra         decode      ;   repeat for all 8 times
+LTR         MOVE.B      D1,(A2)+    ;   throw byte into $5000s
+            ADDI.B      #1,D7
+            CMPI.B      #8,D7
+            BEQ         FSADDR      ;   finished decoding
+            BRA         DECODE      ;   repeat for all 8 times
 
-inv         lea         invalid,a1
-            move.b      #14,d0
-            trap        #15
-            bra         restart
+INV         LEA         INVALID,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         RESTART
 
-fsaddr      cmpi.b      #$FF,$5017
-            bne         feaddr
+FSADDR      CMPI.B      #$FF,$5017
+            BNE         FEADDR
 
-            lea         eaddr,a1
-            move.b      #14,d0
-            trap        #15         ;   ask for ending address
+            LEA         EADDR,A1
+            MOVE.B      #14,D0
+            TRAP        #15         ;   ask for ending address
             
-            movea.l     #$6000,a1
-            move.l      #$5010,a2
-            move.b      #0,d7
+            MOVEA.L     #$6000,A1
+            MOVE.L      #$5010,A2
+            MOVE.B      #0,D7
             
-            move.b      #2,d0
-            trap        #15         ;   read number from keyboard into $6000
+            MOVE.B      #2,D0
+            TRAP        #15         ;   read number from keyboard into $6000
             
-            bra         decode
+            BRA         DECODE
 
-feaddr
+FEADDR
 
-            move.b      #9,d0
-            trap        #15         ;   halts simulator
+            MOVE.B      #9,D0
+            TRAP        #15         ;   halts simulator
 
 
-wlc         dc.b        'Welcome to Team Terminal''s disassembler!',cr,lf,0
-saddr       dc.b        'Please enter your starting address: ',0
-eaddr       dc.b        'Please enter your ending address: ',0
-invalid     dc.b        'Please enter a valid address.',cr,lf,0
+WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
+SADDR       DC.B        'Please enter your starting address: ',0
+EADDR       DC.B        'Please enter your ending address: ',0
+INVALID     DC.B        'Please enter a valid address.',CR,LF,0
 
-            end         start
+            END         START
+
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
