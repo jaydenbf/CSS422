@@ -1,17 +1,11 @@
-*****************************
-*
-* disassembler.X68
-*
-* Created 11/20/2020
-*
-* CSS 422 Disassembler Project - Team Terminal
-*
-*****************************
+*-----------------------------------------------------------
+* Title      : Disassembler for CSS 422 Project - Team Terminal
+*-----------------------------------------------------------
 
 LF          EQU         $0A
 CR          EQU         $0D
-
-START       ORG         $1000
+            ORG         $1000
+START:       
 
             MOVE.L      #$6000,A1
             MOVE.L      #$5000,A2
@@ -72,9 +66,8 @@ FSADDR      CMPI.B      #$FF,$5017
             BRA         DECODE
 
 FEADDR
-
-            MOVE.B      #9,D0
-            TRAP        #15         ;   halts simulator
+            INCLUDE 'strings.x68'
+            SIMHALT                 ;   halt simulator
 
 
 WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
@@ -83,6 +76,7 @@ EADDR       DC.B        'Please enter your ending address: ',0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,0
 
             END         START
+
 
 *~Font name~Courier New~
 *~Font size~10~
