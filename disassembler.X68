@@ -66,7 +66,7 @@ FSADDR      CMPI.B      #$FF,$5017
             BRA         DECODE
 
 FEADDR
-            INCLUDE 'strings.x68'
+            INCLUDE     'strings.x68'
             SIMHALT                 ;   halt simulator
 
 
