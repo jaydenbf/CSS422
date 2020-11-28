@@ -4,8 +4,23 @@
 
 LF          EQU         $0A
 CR          EQU         $0D
+
+
+*--------------------------------------------------------------
+*           BEGINNING OF PROGRAM
+*--------------------------------------------------------------
+
             ORG         $1000
 START:       
+
+*--------------------------------------------------------------
+*           RECEIVE AND PARSE INPUT
+*   postcondition:  correct hexadecimal addresses inputted 
+*                   will be entered into
+*                       starting address    - $7000
+*                       ending address      - $7010
+*--------------------------------------------------------------
+
 
             MOVE.L      #$6000,A1
             MOVE.L      #$5000,A2
@@ -91,10 +106,261 @@ FSCOMB      CMPI.B      #$FF,$7000
             
 FECOMB      MOVEA.L     #$7010,A2
             MOVE.L      D1,(A2)         ; move ending address into 6000
+            
+*--------------------------------------------------------------
+*           FIND OPCODE
+*--------------------------------------------------------------
 
+            MOVEA.L     $7000,A6        ; will use a6 as the current address
+            *JSR         ATEND
+            
+            MOVE.L      #$00000000,D1
+            MOVE.W      (A6),D1
+            ASL.W       #1,D1
+            
+            BCC         BITS_0
+            BCS         BITS_1
+
+BITS_0      ASL.W       #1,D1
+            BCC         MOVE            ; MOVE
+            BCS         BITS_01
+            
+BITS_01     ASL.W       #1,D1
+            BCC         BITS_010
+            BCS         BITS_011
+           
+BITS_010    ASL.W       #2,D1
+            BCC         BITS_010X0
+            BCS         BITS_010X1
+
+BITS_011    ASL.W       #1,D1           ; Bcc if any of next 4 bits are 1
+            BCS         Bcc
+            ASL.W       #1,D1
+            BCS         Bcc
+            ASL.W       #1,D1
+            BCS         Bcc
+            ASL.W       #1,D1
+            BCS         Bcc
+            BRA         BRA             ; BRA otherwise
+
+BITS_010X0  ASL.W       #4,D1
+            BCC         NOT             ; NOT
+            BCS         LEA             ; LEA
+            
+BITS_010X1  ASL.W       #2,D1
+            BCC         BITS_010X1X0
+            BCS         BITS_010X1X1
+            
+BITS_010X1X0
+            ASL.W       #1,D1
+            BCC         MOVEM           ; MOVEM
+            BCS         LEA             ; LEA
+            
+BITS_010X1X1
+            ASL.W       #1,D1
+            BCC         BITS_010X1X10
+            BCS         LEA             ; LEA
+            
+BITS_010X1X10
+            ASL.W       #1,D1
+            BCS         JSR             ; JSR
+            ASL.W       #5,D1
+            BCC         NOP             ; NOP
+            BCS         RTS             ; RTS
+
+BITS_1      ASL.W       #1,D1
+            BCC         SUB             ; SUB
+            BCS         BITS_11
+            
+BITS_11     ASL.W       #1,D1
+            BCC         BITS_110
+            BCS         BITS_111
+
+BITS_110    ASL.W       #1,D1
+            BCC         BITS_1100
+            BCS         AND             ; AND
+          
+BITS_111    ASL.W       #4,D1
+            BCC         ASR             ; ASR
+            BCS         LSL             ; LSL
+
+BITS_1100   ASL.W       #4,D1           ; AND if any bits 8-6 are 0
+            BCC         AND
+            ASL.W       #1,D1
+            BCC         AND            
+            ASL.W       #1,D1
+            BCC         AND
+            BRA         MULS            ; MULS otherwise
+            
+*--------------------------------------------------------------
+*           NOP
+*--------------------------------------------------------------
+NOP         LEA         NOPMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+*--------------------------------------------------------------
+*           MOVE
+*--------------------------------------------------------------
+MOVE        LEA         MOVEMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           MOVEM
+*--------------------------------------------------------------
+MOVEM       LEA         MOVEMMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           ADD
+*--------------------------------------------------------------
+ADD         LEA         ADDMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           SUB
+*--------------------------------------------------------------
+SUB         LEA         SUBMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           MULS
+*--------------------------------------------------------------
+MULS        LEA         MULSMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           LEA
+*--------------------------------------------------------------
+LEA         LEA         LEAMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           AND
+*--------------------------------------------------------------
+AND         LEA         ANDMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           NOT
+*--------------------------------------------------------------
+NOT         LEA         NOTMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           LSL
+*--------------------------------------------------------------
+LSL         LEA         LSLMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           ASR
+*--------------------------------------------------------------
+ASR         LEA         ASRMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           Bcc
+*--------------------------------------------------------------
+Bcc         LEA         BGEMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           JSR
+*--------------------------------------------------------------
+JSR         LEA         JSRMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           RTS
+*--------------------------------------------------------------
+RTS         LEA         RTSMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           BRA
+*--------------------------------------------------------------
+BRA         LEA         NOPMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         FINISHED
+
+
+*--------------------------------------------------------------
+*           FINISHED
+*--------------------------------------------------------------
+FINISHED
+
+
+*--------------------------------------------------------------
+*            CHECK IF THIS IS THE LAST INSTRUCTION
+*--------------------------------------------------------------
+ATEND       MOVE.L      $7010,A5
+            CMPA.L      A6,A5
+            BGT         FINISHED
+            RTS
+            
 
             INCLUDE     'strings.x68'
             SIMHALT                 ;   halt simulator
+
+NOPMSG      DC.B        'NOP     ',0
+MOVEMSG     DC.B        'MOVE    ',0
+MOVEMMSG    DC.B        'MOVEM   ',0
+ADDMSG      DC.B        'ADD     ',0
+SUBMSG      DC.B        'SUB     ',0
+MULSMSG     DC.B        'MULS    ',0
+LEAMSG      DC.B        'LEA     ',0
+ANDMSG      DC.B        'AND     ',0
+NOTMSG      DC.B        'NOT     ',0
+LSLMSG      DC.B        'LSL     ',0
+ASRMSG      DC.B        'ASR     ',0
+BLTMSG      DC.B        'BLT     ',0
+BGEMSG      DC.B        'BGE     ',0
+BEQMSG      DC.B        'BEQ     ',0
+JSRMSG      DC.B        'JSR     ',0
+RTSMSG      DC.B        'RTS     ',0
+BRAMSG      DC.B        'BRA     ',0
 
 
 WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
@@ -103,6 +369,7 @@ EADDR       DC.B        'Please enter your ending address: ',0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,0
 
             END         START
+
 
 
 
