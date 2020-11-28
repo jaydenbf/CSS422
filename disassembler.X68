@@ -9,7 +9,7 @@ START:
 
             MOVE.L      #$6000,A1
             MOVE.L      #$5000,A2
-            MOVE.B      #0,D7
+            MOVE.B      #0,D7       ;   used many times as a counter for loops
 
             LEA         WLC,A1
             MOVE.B      #14,D0
@@ -57,7 +57,7 @@ FSADDR      CMPI.B      #$FF,$5017
             TRAP        #15         ;   ask for ending address
             
             MOVEA.L     #$6000,A1
-            MOVE.L      #$5010,A2
+            MOVEA.L     #$5010,A2
             MOVE.B      #0,D7
             
             MOVE.B      #2,D0
@@ -65,7 +65,34 @@ FSADDR      CMPI.B      #$FF,$5017
             
             BRA         DECODE
 
-FEADDR
+FEADDR      MOVE.B      #0,D7
+            MOVE.L      #$00000000,D1   ; clear d1
+            MOVEA.L     #$5000,A1
+            
+COMB        MOVE.B      (A1)+,D2
+            ASL.L       #4,D1
+            ADD.L       D2,D1
+           
+            ADDI.B      #1,D7
+            CMPI.B      #8,D7           ; check counter
+            BEQ         FSCOMB
+            BNE         COMB
+            
+FSCOMB      CMPI.B      #$FF,$7000
+            BNE         FECOMB
+            MOVEA.L     #$5010,A1
+            MOVEA.L     #$7000,A2
+            MOVE.L      D1,(A2)         ; load the start address hex number into $7000
+            MOVEA.L     #$5010,A1
+            MOVE.L      #$00000000,D1   ; clear d1
+            MOVE.L      #$00000000,D2   ; clear d2
+            MOVE.B      #0,D7           ; reset counter
+            BRA         COMB            ; repeat for ending address
+            
+FECOMB      MOVEA.L     #$7010,A2
+            MOVE.L      D1,(A2)         ; move ending address into 6000
+
+
             INCLUDE     'strings.x68'
             SIMHALT                 ;   halt simulator
 
@@ -78,7 +105,8 @@ INVALID     DC.B        'Please enter a valid address.',CR,LF,0
             END         START
 
 
+
 *~Font name~Courier New~
-*~Font size~10~
+*~Font size~12~
 *~Tab type~1~
 *~Tab size~4~
