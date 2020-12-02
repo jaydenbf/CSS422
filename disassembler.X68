@@ -331,9 +331,162 @@ BRA         LEA         NOPMSG,A1
 *--------------------------------------------------------------
 FINISHED
 
+*--------------------------------------------------------------
+*           DECODE EFFECTIVE ADDRESS
+*               6 bits in the form MMMRRR where M are the mode
+*               bits and R are the register bits stored in D1
+*--------------------------------------------------------------
+EA          LSL.W       #7,D1
+            LSL.W       #3,D1   ; shift unnecessary bits out
+            
+            LSL.W       #1,D1
+            BCC         EA_0
+            BCS         EA_1
+            BRA         INVALID_EA
+
+EA_0        LSL.W       #1,D1
+            BCC         EA_00
+            BCS         EA_01
+            BRA         INVALID_EA
+            
+EA_00       LSL.W       #1,D1
+            BCC         DN              ; Dn
+            BCS         AN              ; An
+            BRA         INVALID_EA
+
+EA_01       LSL.W       #1,D1
+            BCC         AN_ID           ; (An)
+            BCS         AN_POST         ; (An)+
+            BRA         INVALID_EA
+
+EA_1        LSL.W       #1,D1
+            BCC         AN_PRE          ; -(An)
+            BCS         EA_11
+
+EA_11       LSL.W       #2,D1
+            BCC         EA_11X1
+            BCS         EA_IMM          ; #(data)
+            
+EA_11X1     LSL.W       #2,D1
+            BCC         EA_WORD         ; direct word
+            BCS         EA_LONG         ; direct long
+            
+DONE_EA     RTS
+            
+*--------------------------------------------------------------
+*           PRINT VARIOUS EA
+*--------------------------------------------------------------
+DN          MOVE.W      D1,D2
+            MOVE.B      #'D',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display D for data register
+            
+            LSR.W       #7,D2
+            LSR.W       #6,D2
+            MOVE.L      D2,D1
+            MOVE.B      #3,D0
+            TRAP        #15             ; display the number for the register
+            BRA         DONE_EA
+
+AN          MOVE.W      D1,D2
+            MOVE.B      #'A',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display A for address register
+            
+            LSR.W       #7,D2
+            LSR.W       #6,D2
+            MOVE.L      D2,D1
+            MOVE.B      #3,D0
+            TRAP        #15             ; display the number for the register
+            BRA         DONE_EA
+
+AN_ID       MOVE.W      D1,D2
+            MOVE.B      #'(',D1
+            MOVE.B      #6,D0
+            TRAP        #15
+            
+            MOVE.W      D1,D2
+            MOVE.B      #'A',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display (A
+            
+            LSR.W       #7,D2
+            LSR.W       #6,D2
+            MOVE.L      D2,D1
+            MOVE.B      #3,D0
+            TRAP        #15             ; display the number for the register
+            
+            MOVE.W      D1,D2
+            MOVE.B      #')',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display )
+            BRA         DONE_EA
+
+
+AN_POST     MOVE.W      D1,D2
+            MOVE.B      #'(',D1
+            MOVE.B      #6,D0
+            TRAP        #15
+            
+            MOVE.W      D1,D2
+            MOVE.B      #'A',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display (A
+            
+            LSR.W       #7,D2
+            LSR.W       #6,D2
+            MOVE.L      D2,D1
+            MOVE.B      #3,D0
+            TRAP        #15             ; display the number for the register
+            
+            MOVE.W      D1,D2
+            MOVE.B      #')',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display )
+            
+            MOVE.W      D1,D2
+            MOVE.B      #'+',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display +
+            BRA         DONE_EA
+
+
+AN_PRE      MOVE.W      D1,D2
+            MOVE.B      #'-',D1
+            MOVE.B      #6,D0
+            TRAP        #15
+      
+            MOVE.W      D1,D2
+            MOVE.B      #'(',D1
+            MOVE.B      #6,D0
+            TRAP        #15
+            
+            MOVE.W      D1,D2
+            MOVE.B      #'A',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display -(A
+            
+            LSR.W       #7,D2
+            LSR.W       #6,D2
+            MOVE.L      D2,D1
+            MOVE.B      #3,D0
+            TRAP        #15             ; display the number for the register
+            
+            MOVE.W      D1,D2
+            MOVE.B      #')',D1
+            MOVE.B      #6,D0
+            TRAP        #15             ; display )
+            BRA         DONE_EA
+
+EA_IMM      *todo
+
+EA_WORD     *todo
+
+EA_LONG     *todo
+            
 
 *--------------------------------------------------------------
-*            CHECK IF THIS IS THE LAST INSTRUCTION
+*           CHECK IF THIS IS THE LAST INSTRUCTION
 *--------------------------------------------------------------
 ATEND       MOVE.L      $7010,A5
             CMPA.L      A6,A5
@@ -369,6 +522,7 @@ EADDR       DC.B        'Please enter your ending address: ',0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,0
 
             END         START
+
 
 
 
