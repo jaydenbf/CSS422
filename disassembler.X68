@@ -17,26 +17,28 @@ START:
 *           RECEIVE AND PARSE INPUT
 *   postcondition:  correct hexadecimal addresses inputted 
 *                   will be entered into
-*                       starting address    - $7000
-*                       ending address      - $7010
+*                       starting address    - $700
+*                       ending address      - $710
 *--------------------------------------------------------------
 
 
-            MOVE.L      #$6000,A1
-            MOVE.L      #$5000,A2
+RESTART     MOVE.L      #$500,A2
+            MOVE.L      #$000,A4
             MOVE.B      #0,D7       ;   used many times as a counter for loops
+            MOVE.B      #0,D6       ;   used as a counter for how many lines we've printed
 
             LEA         WLC,A1
             MOVE.B      #14,D0
             TRAP        #15         ;   print welcome message
 
 
-RESTART     LEA         SADDR,A1
+            LEA         SADDR,A1
             MOVE.B      #14,D0
             TRAP        #15         ;   ask for starting address
             
+            MOVE.L      #$600,A1
             MOVE.B      #2,D0
-            TRAP        #15         ;   read number from keyboard into $6000
+            TRAP        #15         ;   read number from keyboard into $600
             
 DECODE      MOVE.B      (A1)+,D1
             CMPI.B      #$30,D1     ;   is D1 < 30
@@ -64,15 +66,15 @@ INV         LEA         INVALID,A1
             TRAP        #15
             BRA         RESTART
 
-FSADDR      CMPI.B      #$FF,$5017
+FSADDR      CMPI.B      #$FF,$517
             BNE         FEADDR
 
             LEA         EADDR,A1
             MOVE.B      #14,D0
             TRAP        #15         ;   ask for ending address
             
-            MOVEA.L     #$6000,A1
-            MOVEA.L     #$5010,A2
+            MOVEA.L     #$600,A1
+            MOVEA.L     #$510,A2
             MOVE.B      #0,D7
             
             MOVE.B      #2,D0
@@ -82,7 +84,7 @@ FSADDR      CMPI.B      #$FF,$5017
 
 FEADDR      MOVE.B      #0,D7
             MOVE.L      #$00000000,D1   ; clear d1
-            MOVEA.L     #$5000,A1
+            MOVEA.L     #$500,A1
             
 COMB        MOVE.B      (A1)+,D2
             ASL.L       #4,D1
@@ -93,26 +95,26 @@ COMB        MOVE.B      (A1)+,D2
             BEQ         FSCOMB
             BNE         COMB
             
-FSCOMB      CMPI.B      #$FF,$7000
+FSCOMB      CMPI.B      #$FF,$700
             BNE         FECOMB
-            MOVEA.L     #$5010,A1
-            MOVEA.L     #$7000,A2
-            MOVE.L      D1,(A2)         ; load the start address hex number into $7000
-            MOVEA.L     #$5010,A1
+            MOVEA.L     #$510,A1
+            MOVEA.L     #$700,A2
+            MOVE.L      D1,(A2)         ; load the start address hex number into $700
+            MOVEA.L     #$510,A1
             MOVE.L      #$00000000,D1   ; clear d1
             MOVE.L      #$00000000,D2   ; clear d2
             MOVE.B      #0,D7           ; reset counter
             BRA         COMB            ; repeat for ending address
             
-FECOMB      MOVEA.L     #$7010,A2
-            MOVE.L      D1,(A2)         ; move ending address into 6000
+FECOMB      MOVEA.L     #$710,A2
+            MOVE.L      D1,(A2)         ; move ending address into $600
             
 *--------------------------------------------------------------
 *           FIND OPCODE
 *--------------------------------------------------------------
 
-            MOVEA.L     $7000,A6        ; will use a6 as the current address
-            *JSR         ATEND
+            MOVEA.L     $700,A6        ; will use a6 as the current address
+            JSR         ATEND
             
             MOVE.L      #$00000000,D1
             MOVE.W      (A6),D1
@@ -195,333 +197,211 @@ BITS_1100   ASL.W       #4,D1           ; AND if any bits 8-6 are 0
 *--------------------------------------------------------------
 *           NOP
 *--------------------------------------------------------------
-NOP         LEA         NOPMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+NOP         BRA         FINISHED
 
 *--------------------------------------------------------------
 *           MOVE
 *--------------------------------------------------------------
-MOVE        LEA         MOVEMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+MOVE        BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           MOVEM
 *--------------------------------------------------------------
-MOVEM       LEA         MOVEMMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+MOVEM       BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           ADD
 *--------------------------------------------------------------
-ADD         LEA         ADDMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+ADD         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           SUB
 *--------------------------------------------------------------
-SUB         LEA         SUBMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+SUB         BRA         FINISHED
 
 
 *--------------------------------------------------------------
-*           MULS
+*           MULS (MULS.L NOT SUPPORTED)
 *--------------------------------------------------------------
-MULS        LEA         MULSMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+MULS        BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           LEA
 *--------------------------------------------------------------
-LEA         LEA         LEAMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+LEA         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           AND
 *--------------------------------------------------------------
-AND         LEA         ANDMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+AND         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           NOT
 *--------------------------------------------------------------
-NOT         LEA         NOTMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+NOT         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           LSL
 *--------------------------------------------------------------
-LSL         LEA         LSLMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+LSL         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           ASR
 *--------------------------------------------------------------
-ASR         LEA         ASRMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+ASR         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           Bcc
 *--------------------------------------------------------------
-Bcc         LEA         BGEMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+Bcc         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           JSR
 *--------------------------------------------------------------
-JSR         LEA         JSRMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+JSR         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           RTS
 *--------------------------------------------------------------
-RTS         LEA         RTSMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+RTS         BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           BRA
 *--------------------------------------------------------------
-BRA         LEA         NOPMSG,A1
-            MOVE.B      #14,D0
-            TRAP        #15
-            BRA         FINISHED
+BRA         BRA         FINISHED
 
+*--------------------------------------------------------------
+*           DATA (invalid input)
+*--------------------------------------------------------------
+DATA        BRA         FINISHED
 
 *--------------------------------------------------------------
 *           FINISHED
 *--------------------------------------------------------------
-FINISHED
+FINISHED    SIMHALT                 ;   halt simulator
 
 *--------------------------------------------------------------
 *           DECODE EFFECTIVE ADDRESS
 *               6 bits in the form MMMRRR where M are the mode
 *               bits and R are the register bits stored in D1
 *--------------------------------------------------------------
-EA          LSL.W       #7,D1
+EA_MFIRST   MOVE.B      D1,D2   ; save register data
+
+            LSL.W       #7,D1
             LSL.W       #3,D1   ; shift unnecessary bits out
+            LSL.W       #7,D2
+            LSL.W       #6,D2
             
-            LSL.W       #1,D1
-            BCC         EA_0
-            BCS         EA_1
-            BRA         INVALID_EA
-
-EA_0        LSL.W       #1,D1
-            BCC         EA_00
-            BCS         EA_01
-            BRA         INVALID_EA
+            LSR.W       #7,D1
+            LSR.W       #6,D1   ; left with just 3 mode bits in D1
+            LSR.W       #7,D2   ; left with just 3 reg bits in D2
+            LSL.W       #6,D2
             
-EA_00       LSL.W       #1,D1
-            BCC         DN              ; Dn
-            BCS         AN              ; An
-            BRA         INVALID_EA
-
-EA_01       LSL.W       #1,D1
-            BCC         AN_ID           ; (An)
-            BCS         AN_POST         ; (An)+
-            BRA         INVALID_EA
-
-EA_1        LSL.W       #1,D1
-            BCC         AN_PRE          ; -(An)
-            BCS         EA_11
-
-EA_11       LSL.W       #2,D1
-            BCC         EA_11X1
-            BCS         EA_IMM          ; #(data)
+            CMPI.B      #%000,D1
+            BEQ         DN
             
-EA_11X1     LSL.W       #2,D1
-            BCC         EA_WORD         ; direct word
-            BCS         EA_LONG         ; direct long
+            CMPI.B      #%001,D1
+            BEQ         AN
+            
+            CMPI.B      #%010,D1
+            BEQ         AN_ID
+            
+            CMPI.B      #%011,D1
+            BEQ         AN_POST
+            
+            CMPI.B      #%100,D1
+            BEQ         AN_PRE
+            
+            CMPI.B      #%111,D1
+            BNE         DATA        ; if the mode is anything else it's not valid
+            
+            LSR.W       #1,D2       ; need to check register for direct addressing
+            BCS         DIR_LONG    ; long addressing if reg = XX1
+            LSR.W       #2,D2
+            BCC         DIR_WORD    ; word addressing if reg = 0X0
+            BCS         IMM         ; immediate if reg = 1X0
+            
             
 DONE_EA     RTS
             
 *--------------------------------------------------------------
 *           PRINT VARIOUS EA
 *--------------------------------------------------------------
-DN          MOVE.W      D1,D2
-            MOVE.B      #'D',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display D for data register
+DN          MOVE.B      'D',(A4)+
+            ADDI.B      #48,D2
+            MOVE.B      D2,(A4)+        ; d2 to ascii number
             
-            LSR.W       #7,D2
-            LSR.W       #6,D2
-            MOVE.L      D2,D1
-            MOVE.B      #3,D0
-            TRAP        #15             ; display the number for the register
             BRA         DONE_EA
 
-AN          MOVE.W      D1,D2
-            MOVE.B      #'A',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display A for address register
-            
-            LSR.W       #7,D2
-            LSR.W       #6,D2
-            MOVE.L      D2,D1
-            MOVE.B      #3,D0
-            TRAP        #15             ; display the number for the register
+AN          MOVE.B      'A',(A4)+
+            ADDI.B      #48,D2
+            MOVE.B      D2,(A4)+        ; d2 to ascii number
+
             BRA         DONE_EA
 
-AN_ID       MOVE.W      D1,D2
-            MOVE.B      #'(',D1
-            MOVE.B      #6,D0
-            TRAP        #15
-            
-            MOVE.W      D1,D2
-            MOVE.B      #'A',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display (A
-            
-            LSR.W       #7,D2
-            LSR.W       #6,D2
-            MOVE.L      D2,D1
-            MOVE.B      #3,D0
-            TRAP        #15             ; display the number for the register
-            
-            MOVE.W      D1,D2
-            MOVE.B      #')',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display )
+AN_ID       MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
+            MOVE.B      'A',(A4)+
+            ADDI.B      #48,D2
+            MOVE.B      D2,(A4)+        ; d2 to ascii number
+            MOVE.B      ')',(A4)+
+
             BRA         DONE_EA
 
 
-AN_POST     MOVE.W      D1,D2
-            MOVE.B      #'(',D1
-            MOVE.B      #6,D0
-            TRAP        #15
-            
-            MOVE.W      D1,D2
-            MOVE.B      #'A',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display (A
-            
-            LSR.W       #7,D2
-            LSR.W       #6,D2
-            MOVE.L      D2,D1
-            MOVE.B      #3,D0
-            TRAP        #15             ; display the number for the register
-            
-            MOVE.W      D1,D2
-            MOVE.B      #')',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display )
-            
-            MOVE.W      D1,D2
-            MOVE.B      #'+',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display +
+AN_POST     MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
+            MOVE.B      'A',(A4)+
+            ADDI.B      #48,D2
+            MOVE.B      D2,(A4)+        ; d2 to ascii number
+            MOVE.B      ')',(A4)+
+            MOVE.B      '+',(A4)+
+
             BRA         DONE_EA
 
 
-AN_PRE      MOVE.W      D1,D2
-            MOVE.B      #'-',D1
-            MOVE.B      #6,D0
-            TRAP        #15
-      
-            MOVE.W      D1,D2
-            MOVE.B      #'(',D1
-            MOVE.B      #6,D0
-            TRAP        #15
-            
-            MOVE.W      D1,D2
-            MOVE.B      #'A',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display -(A
-            
-            LSR.W       #7,D2
-            LSR.W       #6,D2
-            MOVE.L      D2,D1
-            MOVE.B      #3,D0
-            TRAP        #15             ; display the number for the register
-            
-            MOVE.W      D1,D2
-            MOVE.B      #')',D1
-            MOVE.B      #6,D0
-            TRAP        #15             ; display )
+AN_PRE      MOVE.B      '-',(A4)+
+            MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
+            MOVE.B      'A',(A4)+
+            ADDI.B      #48,D2
+            MOVE.B      D2,(A4)+        ; d2 to ascii number
+            MOVE.B      ')',(A4)+
+
             BRA         DONE_EA
 
-EA_IMM      *todo
 
-EA_WORD     *todo
+IMM         *todo
 
-EA_LONG     *todo
+DIR_WORD    *todo
+
+DIR_LONG    *todo
             
 
 *--------------------------------------------------------------
 *           CHECK IF THIS IS THE LAST INSTRUCTION
 *--------------------------------------------------------------
-ATEND       MOVE.L      $7010,A5
-            CMPA.L      A6,A5
-            BGT         FINISHED
+ATEND       
             RTS
+           
             
 
-            INCLUDE     'strings.x68'
-            SIMHALT                 ;   halt simulator
-
-NOPMSG      DC.B        'NOP     ',0
-MOVEMSG     DC.B        'MOVE    ',0
-MOVEMMSG    DC.B        'MOVEM   ',0
-ADDMSG      DC.B        'ADD     ',0
-SUBMSG      DC.B        'SUB     ',0
-MULSMSG     DC.B        'MULS    ',0
-LEAMSG      DC.B        'LEA     ',0
-ANDMSG      DC.B        'AND     ',0
-NOTMSG      DC.B        'NOT     ',0
-LSLMSG      DC.B        'LSL     ',0
-ASRMSG      DC.B        'ASR     ',0
-BLTMSG      DC.B        'BLT     ',0
-BGEMSG      DC.B        'BGE     ',0
-BEQMSG      DC.B        'BEQ     ',0
-JSRMSG      DC.B        'JSR     ',0
-RTSMSG      DC.B        'RTS     ',0
-BRAMSG      DC.B        'BRA     ',0
-
-
 WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
-SADDR       DC.B        'Please enter your starting address: ',0
-EADDR       DC.B        'Please enter your ending address: ',0
-INVALID     DC.B        'Please enter a valid address.',CR,LF,0
+SADDR       DC.B        CR,LF,'Please enter your starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
+EADDR       DC.B        CR,LF,'Please enter your ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
+INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
 
             END         START
+
 
 
 
