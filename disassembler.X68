@@ -248,7 +248,10 @@ AND         CLR.L       D1              ; clear D1
             BTST        #8,D1           ; test 8th bit
             BNE         AND_CHECK       ; if 0 further check
             
-AND_CONFIRM JSR         EA_MFIRST       ; get effective addressing modes
+AND_CONFIRM MOVE.B      'A',(A4)+       ; store opcode message in string address
+            MOVE.B      'N',(A4)+       
+            MOVE.B      'D',(A4)+       
+            JSR         EA_MFIRST       ; get effective addressing modes
             JMP         OP_SIZE         ; get size of opcode
 
 AND_CHECK   CLR.L       D1              ; clear D1
@@ -263,7 +266,10 @@ AND_CHECK   CLR.L       D1              ; clear D1
 *--------------------------------------------------------------
 *           NOT
 *--------------------------------------------------------------
-NOT         CLR.L       D1              ; clear D1
+NOT         MOVE.B      'N',(A4)+       ; store opcode message in string address
+            MOVE.B      'O',(A4)+       
+            MOVE.B      'T',(A4)+       
+            CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask bits
@@ -479,6 +485,7 @@ EADDR       DC.B        CR,LF,'Please enter your ending address in hexadecimal b
 INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
 
             END         START
+
 
 
 
