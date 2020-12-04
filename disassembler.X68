@@ -306,8 +306,28 @@ JSR         BRA         FINISHED
 
 *--------------------------------------------------------------
 *           RTS
+*           A6 - the current opcode's address
+*           A4 - the current position of the output
+*         
+*           no operand syntax nor operand size
 *--------------------------------------------------------------
-RTS         BRA         FINISHED
+RTS     
+        
+        MOVE.B    'R',(A4)+     *store opcode messge in string address
+        MOVE.B    'T',(A4)+     *store opcode messge in string address
+        MOVE.B    'S',(A4)+     *store opcode messge in string address
+        MOVE.B    #$0A,(A4)+    * add line feed
+        MOVE.B    #$0D,(A4)+    * add carriage 
+        RTS                     * return
+
+        **************************
+        *after all the test code decoded into the address that A4 is pointing to
+        *use task 14 to print
+        *we need to keep track of where the string started
+        *************************
+        *MOVE.L    ??????,A1       * load message into A1 for print
+        *MOVE.W    #14,D0        *use task 14 to print string in A1
+        *TRAP      #15           *run task 14
 
 
 *--------------------------------------------------------------
