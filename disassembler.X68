@@ -280,7 +280,7 @@ NOT         MOVE.B      'N',(A4)+       ; store opcode message in string address
             BEQ         WORD_SIZE       
             CMP.B       #$02,D1         ; 10 = long
             BEQ         LONG_SIZE       
-            JMP         INVALID_SIZE    ; else size is invalid
+            JMP         DATA            ; else size is invalid
 
 
 *--------------------------------------------------------------
@@ -359,24 +359,24 @@ FINISHED    SIMHALT                 ;   halt simulator
 *                   000     001     010     <EA> /\ Dn -> Dn
 *                   100     101     110     Dn /\ <EA> -> <EA>
 *--------------------------------------------------------------
-OP_SIZE     MOVE.W      (A6),D1
-            LSR.L       #6,D1
-            AND.B       #$07,D1
-            CMP.B       #$0,D1
+OP_SIZE     MOVE.W      (A6),D1     ; move address to D1
+            LSR.L       #6,D1       ; bring 6th and 7th bit to front
+            AND.B       #$07,D1     ; mask other bits
+            CMP.B       #$0,D1      ; 000 = byte
             BEQ         BYTE_SIZE
-            CMP.B       #$4,D1
+            CMP.B       #$4,D1      ; 100 = byte
             BEQ         BYTE_SIZE
             
-            CMP.B       #$1,D1
-            BEQ         WORD_SIZE
-            CMP.B       #$5,D1
+            CMP.B       #$1,D1      ; 001 = word
+            BEQ         WORD_SIZE 
+            CMP.B       #$5,D1      ; 101 = word
             BEQ         WORD_SIZE
             
-            CMP.B       #$2,D1
+            CMP.B       #$2,D1      ; 010 = long
             BEQ         LONG_SIZE
-            CMP.B       #$6,D1
+            CMP.B       #$6,D1      ; 110 = long
             BEQ         LONG_SIZE
-            JMP         INVALID_SIZE
+            JMP         DATA        ; else size is invalid 
             
 
 *--------------------------------------------------------------
@@ -439,9 +439,6 @@ LONG_SIZE   MOVE.B      '.',(A4)+
             MOVE.B      'L',(A4)+
             RTS
             
-INVALID_SIZE
-            *todo
-            RTS
 
 *--------------------------------------------------------------
 *           PRINT VARIOUS EA
