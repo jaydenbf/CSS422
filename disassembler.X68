@@ -238,25 +238,58 @@ LEA         BRA         FINISHED
 *--------------------------------------------------------------
 *           AND
 *--------------------------------------------------------------
-AND         BRA         FINISHED
+AND         CLR.L       D1              ; clear D1
+            MOVE.W      (A6),D1         ; move address to D1
+            LSR.L       #6,D1           ; bring 6th and 7th bit to front
+            AND.B       #$03,D1         ; mask other bits
+            CMP.B       #$03,D1         ; 11 = invalid: could be MULS
+            BEQ         DATA
+            MOVE.W      (A6),D1         ; move address to D1
+            BTST        #8,D1           ; test 8th bit
+            BNE         AND_CHECK       ; if 0 further check
+            
+AND_CONFIRM JSR         EA_MFIRST       ; get effective addressing modes
+            JMP         OP_SIZE         ; get size of opcode
+
+AND_CHECK   CLR.L       D1              ; clear D1
+            MOVE.W      (A6),D1         ; move address to D1
+            LSR.L       #4,D1           ; bring 4th and 5th bit to front
+            AND.B       #$03,D1         ; mask other bits
+            CMP.B       #$0,D1          ; 00 = invalid
+            BEQ         DATA
+            JMP         AND_CONFIRM     ; confirmed to be AND
 
 
 *--------------------------------------------------------------
 *           NOT
 *--------------------------------------------------------------
-NOT         BRA         FINISHED
+NOT         CLR.L       D1              ; clear D1
+            MOVE.W      (A6),D1         ; move address to D1
+            LSR.L       #6,D1           ; bring 6th and 7th bit to front
+            AND.B       #$03,D1         ; mask bits
+            CMP.B       #$0,D1          ; 00 = byte
+            BEQ         BYTE_SIZE
+            CMP.B       #$01,D1         ; 01 = word
+            BEQ         WORD_SIZE       
+            CMP.B       #$02,D1         ; 10 = long
+            BEQ         LONG_SIZE       
+            JMP         INVALID_SIZE    ; else size is invalid
 
 
 *--------------------------------------------------------------
 *           LSL
 *--------------------------------------------------------------
-LSL         BRA         FINISHED
+LSL         CLR.L       D1              ; clear D1
+            MOVE.W      (A6),D1         ; move address to D1
+            BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           ASR
 *--------------------------------------------------------------
-ASR         BRA         FINISHED
+ASR         CLR.L       D1              ; clear D1
+            MOVE.W      (A6),D1         ; move address to D1
+            BRA         FINISHED
 
 
 *--------------------------------------------------------------
@@ -291,6 +324,31 @@ DATA        BRA         FINISHED
 *           FINISHED
 *--------------------------------------------------------------
 FINISHED    SIMHALT                 ;   halt simulator
+
+*--------------------------------------------------------------
+*           OP_SIZE
+*               determine opmode field for the set format:
+*                   BYTE    WORD    LONG    OPERATION
+*                   000     001     010     <EA> /\ Dn -> Dn
+*                   100     101     110     Dn /\ <EA> -> <EA>
+*--------------------------------------------------------------
+OP_SIZE     MOVE.W      (A6),D1
+            LSR.L       #6,D1
+            AND.B       #$07,D1
+            CMP.B       #$0,D1
+            BEQ         BYTE_SIZE
+            CMP.B       #$4,D1
+            BEQ         BYTE_SIZE
+            
+            CMP.B       #$1,D1
+            BEQ         WORD_SIZE
+            CMP.B       #$5,D1
+            BEQ         WORD_SIZE
+            
+            CMP.B       #$2,D1
+            BEQ         LONG_SIZE
+            CMP.B       #$6,D1
+            BEQ         LONG_SIZE
 
 *--------------------------------------------------------------
 *           DECODE EFFECTIVE ADDRESS
@@ -407,7 +465,8 @@ INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
 
 
 
+
 *~Font name~Courier New~
-*~Font size~12~
+*~Font size~10~
 *~Tab type~1~
 *~Tab size~4~
