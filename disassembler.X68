@@ -251,8 +251,9 @@ AND         CLR.L       D1              ; clear D1
 AND_CONFIRM MOVE.B      'A',(A4)+       ; store opcode message in string address
             MOVE.B      'N',(A4)+       
             MOVE.B      'D',(A4)+       
-            JSR         EA_MFIRST       ; get effective addressing modes
             JMP         OP_SIZE         ; get size of opcode
+            JSR         EA_MFIRST       ; get effective addressing modes
+            
 
 AND_CHECK   CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
@@ -375,6 +376,8 @@ OP_SIZE     MOVE.W      (A6),D1
             BEQ         LONG_SIZE
             CMP.B       #$6,D1
             BEQ         LONG_SIZE
+            JMP         INVALID_SIZE
+            
 
 *--------------------------------------------------------------
 *           DECODE EFFECTIVE ADDRESS
@@ -420,6 +423,26 @@ EA_MFIRST   MOVE.B      D1,D2   ; save register data
             
 DONE_EA     RTS
             
+*--------------------------------------------------------------
+*           PRINT VARIOUS SIZES
+*--------------------------------------------------------------    
+            
+BYTE_SIZE   MOVE.B      '.',(A4)+
+            MOVE.B      'B',(A4)+
+            RTS
+
+WORD_SIZE   MOVE.B      '.',(A4)+
+            MOVE.B      'W',(A4)+
+            RTS
+
+LONG_SIZE   MOVE.B      '.',(A4)+
+            MOVE.B      'L',(A4)+
+            RTS
+            
+INVALID_SIZE
+            *todo
+            RTS
+
 *--------------------------------------------------------------
 *           PRINT VARIOUS EA
 *--------------------------------------------------------------
