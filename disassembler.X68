@@ -107,17 +107,51 @@ FSCOMB      CMPI.B      #$FF,$700
             BRA         COMB            ; repeat for ending address
             
 FECOMB      MOVEA.L     #$710,A2
-            MOVE.L      D1,(A2)         ; move ending address into $600
+            MOVE.L      D1,(A2)         ; move ending address into $710
             
 *--------------------------------------------------------------
 *           FIND OPCODE
 *--------------------------------------------------------------
-
             MOVEA.L     $700,A6        ; will use a6 as the current address
-            JSR         ATEND
             
-            MOVE.L      #$00000000,D1
-            MOVE.W      (A6),D1
+FINDOP      LEA         CRLF,A1
+            MOVE.B      #14,D0
+            TRAP        #15             ; next line
+
+            CMPA.L      $710,A6         ; if we are at the final address
+            BEQ         DONE_OPCODE     ; done
+            
+            MOVEA.L     #$00000000,A4   ; setup output
+            
+            MOVEA.L     #0,A1
+            MOVE.L      A6,D1
+            
+            SWAP        D1
+            JSR         HEX_ASCII       ; first word of address in ascii at $0
+            
+            SWAP        D1
+            ADDA.L      #4,A1
+            JSR         HEX_ASCII       ; second word of address in ascii at $0
+            
+            
+            ADDA.L      #8,A4           ; skip to space after address
+            
+            
+            MOVE.B      #32,(A4)+
+            MOVE.B      #32,(A4)+       ; ' ' doesn't work for some reason, these are spaces
+            MOVE.B      #32,(A4)+
+            MOVE.B      #32,(A4)+
+            
+            MOVE.L      #$00000000,D1   ; clear d1
+            MOVE.W      (A6),D1         ; load 4 hex-digit opcode into d1 for decoding
+            MOVE.W      (A6),D5         ; load 4 hex-digit opcode into d5 for storage (needed for some opcodes)
+            ADDA.W      #2,A6           ; move past current opcode
+            
+                        
+            *BRA         DATA            ; test purposes, should delete
+            
+            
+            ; begin decoding
             ASL.W       #1,D1
             
             BCC         BITS_0
@@ -197,7 +231,14 @@ BITS_1100   ASL.W       #4,D1           ; AND if any bits 8-6 are 0
 *--------------------------------------------------------------
 *           NOP
 *--------------------------------------------------------------
-NOP         BRA         FINISHED
+NOP         CMPI.W      #$4E71,D5
+            BNE         DATA
+            
+            MOVE.B      'N',(A4)+
+            MOVE.B      'O',(A4)+
+            MOVE.B      'P',(A4)+
+
+            BRA         FINISHED
 
 *--------------------------------------------------------------
 *           MOVE
@@ -345,12 +386,58 @@ BRA         BRA         FINISHED
 *--------------------------------------------------------------
 *           DATA (invalid input)
 *--------------------------------------------------------------
-DATA        BRA         FINISHED
+DATA        MOVE.B      #$44,(A4)+  ; D
+            MOVE.B      #$41,(A4)+  ; A
+            MOVE.B      #$54,(A4)+  ; T
+            MOVE.B      #$41,(A4)+  ; A
+            MOVE.B      #$20,(A4)+  ; spaces
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$24,(A4)+  ; $
+            
+            MOVE.W      D5,D1
+            MOVEA.W     #$100,A1
+            JSR         HEX_ASCII   ; load ascii for data into 100
+
+            MOVE.B      $100,(A4)+
+            MOVE.B      $101,(A4)+
+            MOVE.B      $102,(A4)+
+            MOVE.B      $103,(A4)+  ; print word address
+            
+            BRA         FINISHED
 
 *--------------------------------------------------------------
-*           FINISHED
+*           FINISHED WITH CURRENT OPCODE
 *--------------------------------------------------------------
-FINISHED    SIMHALT                 ;   halt simulator
+FINISHED    MOVE.B      #$00,(A4)       ; terminate string
+            MOVEA.L     #$00000000,A1   ; load into a1 for printing
+            MOVEA.L     #$00000000,A4   ; reset a4 for next instruction
+            MOVE.B      #14,D0
+            TRAP        #15             ; print instruction
+            
+            ADDQ.B      #1,D6           ; add to counter of lines on screen
+            CMPI.B      #10,D6
+            BEQ         PRESS_ENTER     ; 10 lines have been printed, ask user to hit enter to continue
+                                        ; 10 lines have not been printed, we can print the next line
+            
+            BRA         FINDOP
+
+
+PRESS_ENTER LEA         ENTER_MSG,A1
+            TRAP        #15
+            
+            LEA         ENTER_PH,A1
+            MOVE.B      #2,D0
+            TRAP        #15
+            
+            MOVE.B      #0,D6           ; reset line counter
+            BRA         FINDOP
+
+
+
+
+DONE_OPCODE SIMHALT                 ;   halt simulator
 
 *--------------------------------------------------------------
 *           OP_SIZE
@@ -482,20 +569,69 @@ AN_PRE      MOVE.B      '-',(A4)+
             MOVE.B      ')',(A4)+
 
             BRA         DONE_EA
-
-
+            
 IMM         *todo
 
 DIR_WORD    *todo
 
 DIR_LONG    *todo
-            
 
 *--------------------------------------------------------------
-*           CHECK IF THIS IS THE LAST INSTRUCTION
+*           HEX->ASCII FOR ITEM IN D1, STORE IN (A1)
+*           ONE WORD AT A TIME
 *--------------------------------------------------------------
-ATEND       
+HEX_ASCII   ADDA.L      #4,A1       ; will go backwards with pre-decrement
+
+            MOVE.B      D1,D2       ; last byte
+            LSL.W       #4,D2
+            LSR.B       #4,D2       ; move first 4 bits out of vision [xxxx aaaa 0000 bbbb]
+            
+            CMPI.B      #$A,D2
+            BLT         HEXNUM
+            ADDQ.B      #7,D2
+            
+HEXNUM      ADDI.B      #$30,D2     ; last part in ascii in d2
+            MOVE.B      D2,-(A1)    ; move to a1+3
+            
+            LSR.W       #4,D2
+            LSR.B       #4,D2       ; move next byte into vision
+            
+            CMPI.B      #$A,D2
+            BLT         HEXNUM2
+            ADDQ.B      #7,D2
+            
+HEXNUM2     ADDI.B      #$30,D2     ; first part in ascii in d2
+            MOVE.B      D2,-(A1)    ; move to a1+2
+            
+            ; repeat for first byte
+            LSR.W       #8,D1
+            MOVE.B      D1,D2       ; first byte
+            LSL.W       #4,D2
+            LSR.B       #4,D2       ; move first 4 bits out of vision [xxxx aaaa 0000 bbbb]
+            
+            CMPI.B      #$A,D2
+            BLT         HEXNUM3
+            ADDQ.B      #7,D2
+            
+HEXNUM3     ADDI.B      #$30,D2     ; last part in ascii in d2
+            MOVE.B      D2,-(A1)    ; move to a1+1
+            
+            LSR.W       #4,D2
+            LSR.B       #4,D2       ; move next byte into vision
+            
+            CMPI.B      #$A,D2
+            BLT         HEXNUM4
+            ADDQ.B      #7,D2
+            
+HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
+            MOVE.B      D2,-(A1)     ; move to a1
+            
+            ; result: d1 is now in ascii at (a1)
+            
             RTS
+
+            
+
            
             
 
@@ -503,8 +639,13 @@ WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
 SADDR       DC.B        CR,LF,'Please enter your starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
 EADDR       DC.B        CR,LF,'Please enter your ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
+CRLF        DC.B        CR,LF,0
+ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
+
+ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
