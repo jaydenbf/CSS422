@@ -348,8 +348,50 @@ Bcc         BRA         FINISHED
 
 *--------------------------------------------------------------
 *           JSR
+* D1 - EA mode
+* D2 - register
+* D5 - current opcode
+* A4 - output
+* A5 - current address
 *--------------------------------------------------------------
-JSR         BRA         FINISHED
+JSR     CMPI.W  #$4E80, D5
+        BNE     DATA
+        MOVE.B     #$4A,(A4)+          *4A -- J
+        MOVE.B     #$53,(A4)+          *53  -- S   
+        MOVE.B     #$52,(A4)+          *52   --R
+        MOVE.W      D5,D1              * D1 stores EA mode
+        MOVE.W      D5,D2              * D2 stores register
+        LSR         #3,D1
+        ANDI.W      #$0007,D2          *EA    
+        ANDI.W     #$0007,D4           *register
+        BRA         check_jsr   
+        BRA         EA_MFIRST           add ea and register to A4
+        
+        BRA         FINISHED
+   
+check_jsr   CMP.B   #%000, D1       *invalid
+            BEQ     DATA
+            CMP.B   #%001, D1       *invalid
+            BEQ     DATA
+            CMP.B   #%011, D1       *invalid
+            BEQ     DATA  
+            CMP.B   #%100, D1       *invalid
+            BEQ     DATA  
+            CMP.B   #%111, D1       * check register
+            BRA     check_jsr_register   
+            RTS  
+ 
+check_jsr_register
+            CMP.B    #%100,D2        
+            BEQ     DATA
+            CMP.B    #%101,D2        
+            BEQ     DATA 
+            CMP.B    #%110,D2        
+            BEQ     DATA 
+            CMP.B    #%111,D2        
+            BEQ     DATA         
+            RTS
+
 
 
 *--------------------------------------------------------------
@@ -360,22 +402,13 @@ JSR         BRA         FINISHED
 *           no operand syntax nor operand size
 *--------------------------------------------------------------
 RTS     
-        
-        MOVE.B    'R',(A4)+     *store opcode messge in string address
-        MOVE.B    'T',(A4)+     *store opcode messge in string address
-        MOVE.B    'S',(A4)+     *store opcode messge in string address
-        MOVE.B    #$0A,(A4)+    * add line feed
-        MOVE.B    #$0D,(A4)+    * add carriage 
-        RTS                     * return
+        CMPI.W      #$4E75,D5
+        BNE         DATA
+        MOVE.B    #$52,(A4)+     *store opcode messge in string address
+        MOVE.B    #$54,(A4)+     *store opcode messge in string address
+        MOVE.B    #$53,(A4)+     *store opcode messge in string address
+        BRA         FINISHED
 
-        **************************
-        *after all the test code decoded into the address that A4 is pointing to
-        *use task 14 to print
-        *we need to keep track of where the string started
-        *************************
-        *MOVE.L    ??????,A1       * load message into A1 for print
-        *MOVE.W    #14,D0        *use task 14 to print string in A1
-        *TRAP      #15           *run task 14
 
 
 *--------------------------------------------------------------
