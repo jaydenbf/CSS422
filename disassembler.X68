@@ -21,6 +21,9 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
+            MOVE.W      #$D351,$4000
+            MOVE.W      #$D251,$4002
+            MOVE.W      #$D257,$4004
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -78,7 +81,7 @@ FSADDR      CMPI.B      #$FF,$517
             MOVE.B      #0,D7
             
             MOVE.B      #2,D0
-            TRAP        #15         ;   read number from keyboard into $6000
+            TRAP        #15         ;   read number from keyboard into $600
             
             BRA         DECODE
 
@@ -214,7 +217,7 @@ BITS_11     ASL.W       #1,D1
 
 BITS_110    ASL.W       #1,D1
             BCC         BITS_1100
-            BCS         AND             ; AND
+            BCS         ADD             ; ADD
           
 BITS_111    ASL.W       #4,D1
             BCC         ASR             ; ASR
@@ -234,9 +237,9 @@ BITS_1100   ASL.W       #4,D1           ; AND if any bits 8-6 are 0
 NOP         CMPI.W      #$4E71,D5
             BNE         DATA
             
-            MOVE.B      'N',(A4)+
-            MOVE.B      'O',(A4)+
-            MOVE.B      'P',(A4)+
+            MOVE.B      #$4E,(A4)+      ; N
+            MOVE.B      #$4F,(A4)+      ; O
+            MOVE.B      #$50,(A4)+      ; P
 
             BRA         FINISHED
 
@@ -255,8 +258,69 @@ MOVEM       BRA         FINISHED
 *--------------------------------------------------------------
 *           ADD
 *--------------------------------------------------------------
-ADD         BRA         FINISHED
+ADD         MOVE.W      D5,D1       ; copy opcode
 
+            ROR.W       #8,D1
+            LSR.B       #4,D1
+            CMPI.B      #$0D,D1     ; verify first 4 bits are 1101
+            BNE         DATA
+            
+            MOVE.B      #$41,(A4)+  ; A
+            MOVE.B      #$44,(A4)+  ; D
+            MOVE.B      #$44,(A4)+  ; D
+            
+            JSR         OP_SIZE     ; print size of operation
+            
+            MOVE.B      #$20,(A4)+  ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+
+            LSL.W       #7,D1
+            LSR.W       #7,D1
+            LSR.W       #7,D1       
+            LSR.W       #1,D1       ; isolate 8th bit
+            
+            CMPI.W      #$0000,D1
+            BNE         ADD_EA      ; if 8th bit is 1, ea is destination
+                                    ; if 8th bit is 0, dn is destination
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+            
+            LSL.W       #3,D1
+            LSR.W       #3,D1       ; clear opmode from bottom word
+            
+            JSR         EA_MFIRST   ; decode effective address
+
+            MOVE.B      #$2C,(A4)+   ; ,
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+            ROR.W       #8,D1
+            LSL.B       #4,D1
+            LSR.B       #5,D1       ; isolate register (last word is 0000 0RRR)
+            
+            JSR         EA_MFIRST   ; decode data register
+
+            BRA         FINISHED
+
+ADD_EA      MOVE.W      D5,D1       ; reset d1 to right opcode
+            ROR.W       #8,D1
+            LSL.B       #4,D1
+            LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
+            
+            JSR         EA_MFIRST   ; decode data register
+
+            MOVE.B      #$2C,(A4)+   ; ,
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+            
+            LSL.B       #3,D1
+            LSR.B       #3,D1       ; clear opmode from bottom byte
+            
+            JSR         EA_MFIRST   ; decode effective address
+            
+            BRA         FINISHED
 
 *--------------------------------------------------------------
 *           SUB
@@ -419,7 +483,8 @@ BRA         BRA         FINISHED
 *--------------------------------------------------------------
 *           DATA (invalid input)
 *--------------------------------------------------------------
-DATA        MOVE.B      #$44,(A4)+  ; D
+DATA        MOVEA.L     #$00000008,A4
+            MOVE.B      #$44,(A4)+  ; D
             MOVE.B      #$41,(A4)+  ; A
             MOVE.B      #$54,(A4)+  ; T
             MOVE.B      #$41,(A4)+  ; A
@@ -479,7 +544,7 @@ DONE_OPCODE SIMHALT                 ;   halt simulator
 *                   000     001     010     <EA> /\ Dn -> Dn
 *                   100     101     110     Dn /\ <EA> -> <EA>
 *--------------------------------------------------------------
-OP_SIZE     MOVE.W      (A6),D1     ; move address to D1
+OP_SIZE     MOVE.W      D5,D1     ; move address to D1
             LSR.L       #6,D1       ; bring 6th and 7th bit to front
             AND.B       #$07,D1     ; mask other bits
             CMP.B       #$0,D1      ; 000 = byte
@@ -496,8 +561,7 @@ OP_SIZE     MOVE.W      (A6),D1     ; move address to D1
             BEQ         LONG_SIZE
             CMP.B       #$6,D1      ; 110 = long
             BEQ         LONG_SIZE
-            JMP         DATA        ; else size is invalid 
-            
+            BRA         DATA        ; else size is invalid 
 
 *--------------------------------------------------------------
 *           DECODE EFFECTIVE ADDRESS
@@ -506,15 +570,11 @@ OP_SIZE     MOVE.W      (A6),D1     ; move address to D1
 *--------------------------------------------------------------
 EA_MFIRST   MOVE.B      D1,D2   ; save register data
 
-            LSL.W       #7,D1
-            LSL.W       #3,D1   ; shift unnecessary bits out
-            LSL.W       #7,D2
-            LSL.W       #6,D2
-            
-            LSR.W       #7,D1
-            LSR.W       #6,D1   ; left with just 3 mode bits in D1
-            LSR.W       #7,D2   ; left with just 3 reg bits in D2
-            LSL.W       #6,D2
+            LSL.B       #3,D1
+            LSL.B       #6,D2
+
+            LSR.B       #6,D1   ;left with just 3 mode bits in D1
+            LSR.B       #6,D2   ; left with just 3 reg bits in D2
             
             CMPI.B      #%000,D1
             BEQ         DN
@@ -547,59 +607,59 @@ DONE_EA     RTS
 *           PRINT VARIOUS SIZES
 *--------------------------------------------------------------    
             
-BYTE_SIZE   MOVE.B      '.',(A4)+
-            MOVE.B      'B',(A4)+
+BYTE_SIZE   MOVE.B      #$2E,(A4)+  ; .
+            MOVE.B      #$42,(A4)+  ; B
             RTS
 
-WORD_SIZE   MOVE.B      '.',(A4)+
-            MOVE.B      'W',(A4)+
+WORD_SIZE   MOVE.B      #$2E,(A4)+  ; .
+            MOVE.B      #$57,(A4)+  ; W
             RTS
 
-LONG_SIZE   MOVE.B      '.',(A4)+
-            MOVE.B      'L',(A4)+
+LONG_SIZE   MOVE.B      #$2E,(A4)+  ; .
+            MOVE.B      #$4C,(A4)+  ; L
             RTS
             
 
 *--------------------------------------------------------------
 *           PRINT VARIOUS EA
 *--------------------------------------------------------------
-DN          MOVE.B      'D',(A4)+
+DN          MOVE.B      #$44,(A4)+
             ADDI.B      #48,D2
             MOVE.B      D2,(A4)+        ; d2 to ascii number
             
             BRA         DONE_EA
 
-AN          MOVE.B      'A',(A4)+
+AN          MOVE.B      #$41,(A4)+       ; A
             ADDI.B      #48,D2
             MOVE.B      D2,(A4)+        ; d2 to ascii number
 
             BRA         DONE_EA
 
 AN_ID       MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
-            MOVE.B      'A',(A4)+
+            MOVE.B      #$41,(A4)+       ; A
             ADDI.B      #48,D2
             MOVE.B      D2,(A4)+        ; d2 to ascii number
-            MOVE.B      ')',(A4)+
+            MOVE.B      #$29,(A4)+       ; )
 
             BRA         DONE_EA
 
 
 AN_POST     MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
-            MOVE.B      'A',(A4)+
+            MOVE.B      #$41,(A4)+       ; A
             ADDI.B      #48,D2
             MOVE.B      D2,(A4)+        ; d2 to ascii number
-            MOVE.B      ')',(A4)+
-            MOVE.B      '+',(A4)+
+            MOVE.B      #$29,(A4)+       ; )
+            MOVE.B      #$2B,(A4)+       ; +
 
             BRA         DONE_EA
 
 
-AN_PRE      MOVE.B      '-',(A4)+
-            MOVE.B      #40,(A4)+       ; ( doesn't work for some reason?
-            MOVE.B      'A',(A4)+
+AN_PRE      MOVE.B      #$2D,(A4)+       ; -
+            MOVE.B      #$28,(A4)+       ; (
+            MOVE.B      #$41,(A4)+       ; A
             ADDI.B      #48,D2
             MOVE.B      D2,(A4)+        ; d2 to ascii number
-            MOVE.B      ')',(A4)+
+            MOVE.B      #$29,(A4)+       ; )
 
             BRA         DONE_EA
             
@@ -613,7 +673,8 @@ DIR_LONG    *todo
 *           HEX->ASCII FOR ITEM IN D1, STORE IN (A1)
 *           ONE WORD AT A TIME
 *--------------------------------------------------------------
-HEX_ASCII   ADDA.L      #4,A1       ; will go backwards with pre-decrement
+HEX_ASCII   MOVE.W      D1,-(SP)
+            ADDA.L      #4,A1       ; will go backwards with pre-decrement
 
             MOVE.B      D1,D2       ; last byte
             LSL.W       #4,D2
@@ -660,7 +721,7 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
             MOVE.B      D2,-(A1)     ; move to a1
             
             ; result: d1 is now in ascii at (a1)
-            
+            MOVE.W      (SP)+,D1    ; ensure d1 gets reset (should with jsr)
             RTS
 
             
@@ -678,6 +739,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
