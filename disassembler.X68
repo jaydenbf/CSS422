@@ -313,7 +313,27 @@ MULS        BRA         FINISHED
 *--------------------------------------------------------------
 *           LEA
 *--------------------------------------------------------------
-LEA         BRA         FINISHED
+LEA         MOVE.B 'L',(A4)+
+            MOVE.B 'E',(A4)+
+            MOVE.B 'A',(A4)+ 
+            MOVE.B      #$20,(A4)+  ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+  
+            CLR.L       D5              ; clear D5
+            MOVE.W      (A6),D5         ; move address to D5
+            MOVE.W      D5,D1           ; copy opcode
+            ANDI.W      #%0000000000111111,D1 ; iso effective address
+            JSR         EA_MFIRST       ; print ea
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; copy opcode
+            ANDI.W      #%0000111000000000,D1 ; iso data register
+            LSR.L       #6,D1           ; move register to front
+            LSR.L       #3,D1
+            JSR         EA_MFIRST       ; print/decode data register
+            
+            BRA         FINISHED
 
 
 *--------------------------------------------------------------
