@@ -441,7 +441,14 @@ RTS
 *--------------------------------------------------------------
 *           BRA
 *--------------------------------------------------------------
-BRA         BRA         FINISHED
+BRA         MOVE.B    'B',(A4)+     *store opcode messge in string address
+            MOVE.B    'R',(A4)+     
+            MOVE.B    'A',(A4)+     
+            MOVE.B      #$20,(A4)+  ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            *********unfinished*********
+            BRA         FINISHED
 
 *--------------------------------------------------------------
 *           DATA (invalid input)
