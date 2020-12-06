@@ -246,45 +246,45 @@ NOP         CMPI.W      #$4E71,D5
 *--------------------------------------------------------------
 *           MOVE
 *--------------------------------------------------------------
-MOVE        MOVE.B 'M',(A4)+
-            MOVE.B 'O',(A4)+
-            MOVE.B 'V',(A4)+
-            MOVE.B 'E',(A4)+     
-            CLR.L       D5              ; clear D5
-            MOVE.W      (A6),D5         ; move address to D5
-            LSR.L       #6,D5           ; bring 12th and 13th bit to front for size
-            LSR.L       #6,D5           
-            AND.B       #$03,D5          ; mask bits
-            CMP.B       #$0,D5          ; 00 = byte
+MOVE        MOVE.B #'M',(A4)+
+            MOVE.B #'O',(A4)+
+            MOVE.B #'V',(A4)+
+            MOVE.B #'E',(A4)+     
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            LSR.L       #6,D1           ; bring 12th and 13th bit to front for size
+            LSR.L       #6,D1
+            AND.B       #$03,D1          ; mask bits
+            CMP.B       #$0,D1          ; 00 = byte
             BEQ         BYTE_SIZE
-            CMP.B       #$01,D5         ; 01 = word
+            CMP.B       #$01,D1         ; 01 = word
             BEQ         WORD_SIZE       
-            CMP.B       #$02,D5         ; 10 = long
+            CMP.B       #$02,D1         ; 10 = long
             BEQ         LONG_SIZE       
             JMP         DATA            ; else size is invalid 
              
-            MOVE.B      #$20,(A4)+  ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+            MOVE.B      #' ',(A4)+      ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
             
-            CLR.L       D5              ; clear D5
-            MOVE.W      (A6),D5         ; move address to D5
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
             MOVE.W      D5,D1           ; copy to D1 for ea printing
             JSR         EA_MFIRST
-            MOVE.B      #$2C,(A4)+      ; print comma
+            MOVE.B      #',',(A4)+      ; print comma
             
             MOVE.W      D5,D1           ; copy to D1 again
+            MOVE.W      D5,D2           ; copy to D2 as well
+            
             ANDI.W      #%0000000111000000,D1 ; keep destination mode
             LSR.L       #3,D1           ; bring the destination mode forward
-            ANDI.W      #%000011100000000,D5 ; keep destination register
-            LSR.L       #3,D5           ; bring the destination register to front
-            LSR.L       #6,D5            
+            ANDI.W      #%000011100000000,D2 ; keep destination register
+            LSR.L       #3,D2           ; bring the destination register to front
+            LSR.L       #6,D2            
             
             ; at this point we have D1 -> 0000000000111000 1s being mode
-            ;                       D5 -> 0000000000000111 1s being register
-            ADD.L       D5,D1
-            CLR.L       D5              ; clear D5
-            MOVE.W      (A6),D5         ; reset address on D5
+            ;                       D2 -> 0000000000000111 1s being register
+            ADD.L       D2,D1
             JSR         EA_MFIRST       ; D1 is ready for destination ea print
             
             BRA         FINISHED
@@ -779,6 +779,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
