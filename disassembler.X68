@@ -21,9 +21,8 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.W      #$D351,$4000
-            MOVE.W      #$D251,$4002
-            MOVE.W      #$D257,$4004
+            MOVE.W      #$1239,$4000
+            MOVE.L      #$00000001,$4002
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -255,15 +254,22 @@ MOVE        MOVE.B #'M',(A4)+
             LSR.L       #6,D1           ; bring 12th and 13th bit to front for size
             LSR.L       #6,D1
             AND.B       #$03,D1          ; mask bits
-            CMP.B       #$0,D1          ; 00 = byte
-            BEQ         BYTE_SIZE
-            CMP.B       #$01,D1         ; 01 = word
-            BEQ         WORD_SIZE       
-            CMP.B       #$02,D1         ; 10 = long
-            BEQ         LONG_SIZE       
-            JMP         DATA            ; else size is invalid 
-             
-            MOVE.B      #' ',(A4)+      ; SPACES
+            
+            CMP.B       #$1,D1          ; 01 = byte
+            BNE         MOVE_WORD
+            JSR         BYTE_SIZE
+            BRA         MOVE_SIZED    
+            
+MOVE_WORD   CMP.B       #$3,D1         ; 11 = word
+            BNE         MOVE_LONG
+            JSR         WORD_SIZE
+            BRA         MOVE_SIZED       
+            
+MOVE_LONG   CMP.B       #$2,D1         ; 10 = long
+            BNE         DATA
+            JSR         LONG_SIZE
+            
+MOVE_SIZED  MOVE.B      #' ',(A4)+      ; SPACES
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             
@@ -545,15 +551,19 @@ BRA         BRA         FINISHED
 *           DATA (invalid input)
 *--------------------------------------------------------------
 DATA        MOVEA.L     #$00000008,A4
-            MOVE.B      #$44,(A4)+  ; D
-            MOVE.B      #$41,(A4)+  ; A
-            MOVE.B      #$54,(A4)+  ; T
-            MOVE.B      #$41,(A4)+  ; A
-            MOVE.B      #$20,(A4)+  ; spaces
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$24,(A4)+  ; $
+            MOVE.B      #' ',(A4)+  ; spaces
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #'D',(A4)+  ; D
+            MOVE.B      #'A',(A4)+  ; A
+            MOVE.B      #'T',(A4)+  ; T
+            MOVE.B      #'A',(A4)+  ; A
+            MOVE.B      #' ',(A4)+  ; spaces
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #'$',(A4)+  ; $
             
             MOVE.W      D5,D1
             MOVEA.W     #$100,A1
@@ -631,11 +641,11 @@ OP_SIZE     MOVE.W      D5,D1     ; move address to D1
 *--------------------------------------------------------------
 EA_MFIRST   MOVE.B      D1,D2   ; save register data
 
-            LSL.B       #3,D1
-            LSL.B       #6,D2
+            LSL.B       #2,D1
+            LSL.B       #5,D2
 
-            LSR.B       #6,D1   ;left with just 3 mode bits in D1
-            LSR.B       #6,D2   ; left with just 3 reg bits in D2
+            LSR.B       #5,D1   ;left with just 3 mode bits in D1
+            LSR.B       #5,D2   ; left with just 3 reg bits in D2
             
             CMPI.B      #%000,D1
             BEQ         DN
@@ -725,7 +735,7 @@ AN_PRE      MOVE.B      #$2D,(A4)+       ; -
             BRA         DONE_EA
             
 IMM         ; if it's immediate we need to find the size
-            CLR         A1
+            MOVEA.L     #$00000000,A1
 CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
             BNE         CHECK_PD
             ADDA.L      #1,A1       ; we now have B W or L in (A1)
@@ -735,6 +745,7 @@ CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
                                     ; if it's B or W we need to pull the next word
                                     
             ; word (or byte but they both use a word)
+            CLR.L        D1
             MOVE.W      (A6),D1     ; pull next word
             ADDA.L      #4,A6       ; move past the word
             
@@ -778,9 +789,48 @@ IMM_LONG    MOVE.L      (A6),D1     ; pull next long
             
             BRA         DONE_EA
 
-DIR_WORD    *todo
+DIR_WORD    MOVE.B      #'$',(A4)+  ; address is in hex
 
-DIR_LONG    *todo
+            CLR.L       D1
+            MOVE.W      (A6),D1     ; pull next word
+            ADDA.L      #4,A6       ; move past the word
+            
+            MOVEA.L     #$100,A1
+            JSR         HEX_ASCII   ; convert D1 into ascii at $100-$103
+            
+            MOVEA.L     #$100,A1
+            MOVE.B      (A1)+,(A4)+ ; print the word address $100-$103
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            
+            BRA         DONE_EA
+
+DIR_LONG    MOVE.B      #'$',(A4)+  ; address is in hex
+
+            CLR.L       D1
+            MOVE.L      (A6),D1     ; pull next long
+            ADDA.L      #8,A6       ; move past the long
+            
+            MOVEA.L     #$100,A1
+            SWAP        D1
+            JSR         HEX_ASCII   ; convert upper word into ascii at $100-$103
+            
+            ADDA.L      #4,A1
+            SWAP        D1
+            JSR         HEX_ASCII   ; convert lower word into ascii at $104-$107
+            
+            MOVEA.L     #$100,A1
+            MOVE.B      (A1)+,(A4)+ ; print the long address $100-$107
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            
+            BRA         DONE_EA
 
 *--------------------------------------------------------------
 *           HEX->ASCII FOR ITEM IN D1, STORE IN (A1)
