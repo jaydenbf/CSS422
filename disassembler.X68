@@ -724,7 +724,59 @@ AN_PRE      MOVE.B      #$2D,(A4)+       ; -
 
             BRA         DONE_EA
             
-IMM         *todo
+IMM         ; if it's immediate we need to find the size
+            CLR         A1
+CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
+            BNE         CHECK_PD
+            ADDA.L      #1,A1       ; we now have B W or L in (A1)
+
+            CMPI.B      #'L',(A1)   
+            BEQ         IMM_LONG    ; if it's L we need to pull the next long
+                                    ; if it's B or W we need to pull the next word
+                                    
+            ; word (or byte but they both use a word)
+            MOVE.W      (A6),D1     ; pull next word
+            ADDA.L      #4,A6       ; move past the word
+            
+            MOVE.B      #'#',(A4)+  ; data is immediate
+            MOVE.B      #'$',(A4)+  ; data is in hex
+            
+            MOVEA.L     #$100,A1
+            JSR         HEX_ASCII   ; convert immediate data (d1) into ascii
+            
+            MOVEA.L     #$100,A1
+            MOVE.B      (A1)+,(A4)+ ; print the word data $100-$103
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            
+            BRA         DONE_EA
+            
+IMM_LONG    MOVE.L      (A6),D1     ; pull next long
+            ADDA.L      #8,A6       ; move past the long
+            
+            MOVE.B      #'#',(A4)+  ; data is immediate
+            MOVE.B      #'$',(A4)+  ; data is in hex
+            
+            MOVEA.L     #$100,A1
+            SWAP        D1
+            JSR         HEX_ASCII   ; convert upper word into ascii at $100-$103
+            
+            ADDA.L      #4,A1
+            SWAP        D1
+            JSR         HEX_ASCII   ; conver lower word into ascii at $104-$107
+            
+            MOVEA.L     #$100,A1
+            MOVE.B      (A1)+,(A4)+ ; print the long data $100-$107
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            MOVE.B      (A1)+,(A4)+
+            
+            BRA         DONE_EA
 
 DIR_WORD    *todo
 
