@@ -377,16 +377,15 @@ MULS        BRA         FINISHED
 *--------------------------------------------------------------
 *           LEA
 *--------------------------------------------------------------
-LEA         MOVE.B 'L',(A4)+
-            MOVE.B 'E',(A4)+
-            MOVE.B 'A',(A4)+ 
-            MOVE.B      #$20,(A4)+  ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+LEA         MOVE.B      #'L',(A4)+
+            MOVE.B      #'E',(A4)+
+            MOVE.B      #'A',(A4)+ 
+            MOVE.B      #' ',(A4)+  ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
   
-            CLR.L       D5              ; clear D5
-            MOVE.W      (A6),D5         ; move address to D5
-            MOVE.W      D5,D1           ; copy opcode
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
             ANDI.W      #%0000000000111111,D1 ; iso effective address
             JSR         EA_MFIRST       ; print ea
             
@@ -395,7 +394,9 @@ LEA         MOVE.B 'L',(A4)+
             ANDI.W      #%0000111000000000,D1 ; iso data register
             LSR.L       #6,D1           ; move register to front
             LSR.L       #3,D1
-            JSR         EA_MFIRST       ; print/decode data register
+            
+            ADD.L       #%1000,D1       ; sets ea mode to 001 (An)
+            JSR         EA_MFIRST       ; print/decode address register
             
             BRA         FINISHED
 
@@ -799,6 +800,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
