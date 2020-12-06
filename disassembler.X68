@@ -246,8 +246,48 @@ NOP         CMPI.W      #$4E71,D5
 *--------------------------------------------------------------
 *           MOVE
 *--------------------------------------------------------------
-MOVE        BRA         FINISHED
-
+MOVE        MOVE.B 'M',(A4)+
+            MOVE.B 'O',(A4)+
+            MOVE.B 'V',(A4)+
+            MOVE.B 'E',(A4)+     
+            CLR.L       D5              ; clear D5
+            MOVE.W      (A6),D5         ; move address to D5
+            LSR.L       #6,D5           ; bring 12th and 13th bit to front for size
+            LSR.L       #6,D5           
+            AND.B       #$03,D5          ; mask bits
+            CMP.B       #$0,D5          ; 00 = byte
+            BEQ         BYTE_SIZE
+            CMP.B       #$01,D5         ; 01 = word
+            BEQ         WORD_SIZE       
+            CMP.B       #$02,D5         ; 10 = long
+            BEQ         LONG_SIZE       
+            JMP         DATA            ; else size is invalid 
+             
+            MOVE.B      #$20,(A4)+  ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            
+            CLR.L       D5              ; clear D5
+            MOVE.W      (A6),D5         ; move address to D5
+            MOVE.W      D5,D1           ; copy to D1 for ea printing
+            JSR         EA_MFIRST
+            MOVE.B      #$2C,(A4)+      ; print comma
+            
+            MOVE.W      D5,D1           ; copy to D1 again
+            ANDI.W      #%0000000111000000,D1 ; keep destination mode
+            LSR.L       #3,D1           ; bring the destination mode forward
+            ANDI.W      #%000011100000000,D5 ; keep destination register
+            LSR.L       #3,D5           ; bring the destination register to front
+            LSR.L       #6,D5            
+            
+            ; at this point we have D1 -> 0000000000111000 1s being mode
+            ;                       D5 -> 0000000000000111 1s being register
+            ADD.L       D5,D1
+            CLR.L       D5              ; clear D5
+            MOVE.W      (A6),D5         ; reset address on D5
+            JSR         EA_MFIRST       ; D1 is ready for destination ea print
+            
+            BRA         FINISHED
 
 *--------------------------------------------------------------
 *           MOVEM
