@@ -21,8 +21,7 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.W      #$1239,$4000
-            MOVE.L      #$00000001,$4002
+            MOVE.W      #$9300,$4000
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -311,15 +310,15 @@ ADD         MOVE.W      D5,D1       ; copy opcode
             CMPI.B      #$0D,D1     ; verify first 4 bits are 1101
             BNE         DATA
             
-            MOVE.B      #$41,(A4)+  ; A
-            MOVE.B      #$44,(A4)+  ; D
-            MOVE.B      #$44,(A4)+  ; D
+            MOVE.B      #'A',(A4)+  ; A
+            MOVE.B      #'D',(A4)+  ; D
+            MOVE.B      #'D',(A4)+  ; D
             
-            JSR         OP_SIZE     ; print size of operation
+ADD_SUB     JSR         OP_SIZE     ; print size of operation
             
-            MOVE.B      #$20,(A4)+  ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+            MOVE.B      #' ',(A4)+  ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
             
             MOVE.W      D5,D1       ; reset d1 to right opcode
 
@@ -329,7 +328,7 @@ ADD         MOVE.W      D5,D1       ; copy opcode
             LSR.W       #1,D1       ; isolate 8th bit
             
             CMPI.W      #$0000,D1
-            BNE         ADD_EA      ; if 8th bit is 1, ea is destination
+            BNE         ADDSUB_EA   ; if 8th bit is 1, ea is destination
                                     ; if 8th bit is 0, dn is destination
             
             MOVE.W      D5,D1       ; reset d1 to right opcode
@@ -350,7 +349,7 @@ ADD         MOVE.W      D5,D1       ; copy opcode
 
             BRA         FINISHED
 
-ADD_EA      MOVE.W      D5,D1       ; reset d1 to right opcode
+ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
             ROR.W       #8,D1
             LSL.B       #4,D1
             LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
@@ -371,7 +370,18 @@ ADD_EA      MOVE.W      D5,D1       ; reset d1 to right opcode
 *--------------------------------------------------------------
 *           SUB
 *--------------------------------------------------------------
-SUB         BRA         FINISHED
+SUB         MOVE.W      D5,D1       ; copy opcode
+
+            ROR.W       #8,D1
+            LSR.B       #4,D1
+            CMPI.B      #$09,D1     ; verify first 4 bits are 1001
+            BNE         DATA
+
+            MOVE.B      #'S',(A4)+
+            MOVE.B      #'U',(A4)+
+            MOVE.B      #'B',(A4)+
+            
+            BRA         ADD_SUB     ; reuse decoding for add because they are the same
 
 
 *--------------------------------------------------------------
@@ -902,6 +912,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
