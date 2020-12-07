@@ -506,9 +506,15 @@ AND         MOVE.W      D5,D1       ; copy opcode
 *--------------------------------------------------------------
 *           NOT
 *--------------------------------------------------------------
-NOT         MOVE.B      #$4E,(A4)+      ; N
-            MOVE.B      #$4F,(A4)+      ; O
-            MOVE.B      #$54,(A4)+      ; T
+NOT         MOVE.B      #'N',(A4)+      ; N
+            MOVE.B      #'O',(A4)+      ; O
+            MOVE.B      #'T',(A4)+      ; T
+            
+            MOVE.W      D5,D1
+            AND.W       #$FF00,D1
+            CMPI.W      #$4600,D1
+            BNE         DATA            ; confirm the opcode is not
+            
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
@@ -523,9 +529,12 @@ NOT         MOVE.B      #$4E,(A4)+      ; N
             CMP.B       #$03,D1         ; 11 = invalid      
             BEQ         DATA
             
-            MOVE.B      #$20,(A4)+      ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+            MOVE.B      #' ',(A4)+      ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+
             
             JSR         EA_MFIRST       ; decode effective address
             
