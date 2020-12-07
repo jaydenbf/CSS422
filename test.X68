@@ -178,6 +178,18 @@ start		EQU	$00009000	* ORG and END address
     AND.L     (A1),D1
     AND.L     (A1)+,D1
     AND.L     -(A1),D1  
+    NOT.B     D1
+    NOT.B     (A1)
+    NOT.B     (A1)+
+    NOT.B     -(A1)
+    NOT.W     D1
+    NOT.W     (A1)
+    NOT.W     (A1)+
+    NOT.W     -(A1)
+    NOT.L     D1
+    NOT.L     (A1)
+    NOT.L     (A1)+
+    NOT.L     -(A1)
     BGT.B     label1
     BGT.B     label2
     BLE.B     label1
@@ -268,6 +280,7 @@ label4
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 
 

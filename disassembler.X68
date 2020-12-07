@@ -537,7 +537,7 @@ NOT         MOVE.B      #'N',(A4)+      ; N
             MOVE.W      D5,D1
             AND.W       #$FF00,D1
             CMPI.W      #$4600,D1
-            BNE         DATA            ; confirm the opcode is not
+            BNE         DATA            ; confirm the opcode is NOT
             
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
@@ -558,6 +558,10 @@ NOT         MOVE.B      #'N',(A4)+      ; N
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000111111,D1 ; iso effective address
 
             MOVE.B      D1,D2           ; check for valid modes
             CMPI.B      #%111100,D2
@@ -565,9 +569,9 @@ NOT         MOVE.B      #'N',(A4)+      ; N
             LSR.B       #3,D2
             CMPI.B      #%010,D2        ; dest cannot be An
             BEQ         DATA
-
-            JSR         EA_MFIRST       ; decode effective address
-            
+       
+            JSR         EA_MFIRST       ; decode effective address     
+              
             BRA         FINISHED
 
 
@@ -579,17 +583,17 @@ LSL         MOVE.W      D5,D1
             CMPI.W      #%1110000000001000,D1
             BNE         DATA
 
-            MOVE.B      #$4C,(A4)+      ; L
-            MOVE.B      #$53,(A4)+      ; S
-            MOVE.B      #$4C,(A4)+      ; L
+            MOVE.B      #'L',(A4)+      ; L
+            MOVE.B      #'S',(A4)+      ; S
+            MOVE.B      #'L',(A4)+      ; L
             CLR.L       D1              ; clear D1
-            MOVE.W      D5,D1         ; move address to D1
+            MOVE.W      D5,D1           ; move address to D1
             BTST        #8,D1           ; test 8th bit
             BEQ         DATA            ; if 0, this is LSR, unsupported
             
-            MOVE.B      #$20,(A4)+      ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+            MOVE.B      #' ',(A4)+      ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
             
             JSR         EA_MFIRST       ; decode effective address
             
@@ -604,17 +608,17 @@ ASR         MOVE.W      D5,D1
             CMPI.W      #%1111000000000000,D1
             BNE         DATA
 
-            MOVE.B      #$41,(A4)+      ; A
-            MOVE.B      #$53,(A4)+      ; S
-            MOVE.B      #$52,(A4)+      ; R
+            MOVE.B      #'A',(A4)+      ; A
+            MOVE.B      #'S',(A4)+      ; S
+            MOVE.B      #'R',(A4)+      ; R
             CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
             BTST        #8,D1           ; test 8th bit
             BNE         DATA            ; if 1, this is ASL, unsupported
             
-            MOVE.B      #$20,(A4)+      ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
+            MOVE.B      #' ',(A4)+      ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
             
             JSR         EA_MFIRST       ; decode effective address
             
@@ -1226,6 +1230,8 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
+
 
 
 
