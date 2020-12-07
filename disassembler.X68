@@ -424,17 +424,58 @@ AND         CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask other bits
-            CMP.B       #$03,D1         ; 11 = invalid: could be MULS
+            CMP.B       #$03,D1         ; 11 = invalid, could be MULS
             BEQ         DATA
             MOVE.W      (A6),D1         ; move address to D1
             BTST        #8,D1           ; test 8th bit
-            BNE         AND_CHECK       ; if 0 further check
+            BNE         AND_CHECK       ; if 0, dn is destination, further check if valid
             
-AND_CONFIRM MOVE.B      'A',(A4)+       ; store opcode message in string address
-            MOVE.B      'N',(A4)+       
-            MOVE.B      'D',(A4)+       
+AND_VALID   MOVE.B      #$41,(A4)+      ; A
+            MOVE.B      #$4E,(A4)+      ; N
+            MOVE.B      #$44,(A4)+      ; D
             JMP         OP_SIZE         ; get size of opcode
-            JSR         EA_MFIRST       ; get effective addressing modes
+            MOVE.B      #$20,(A4)+      ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            MOVE.W      (A6),D1         ; move address to D1
+            BTST        #8,D1           ; test 8th bit
+            BNE         AND_EA          ; if 8th bit is 0, dn is destination
+                                        ; if 8th bit is 1, ea is destination
+                                        
+            MOVE.W      (A6),D1         ; move address to D1
+            LSL.W       #3,D1           
+            LSR.W       #3,D1           ; clear opmode from bottom word
+            
+            JSR         EA_MFIRST       ; decode effective address
+
+            MOVE.B      #$2C,(A4)+      ; ,
+            
+            MOVE.W      (A6),D1         ; move address to D1
+            ROR.W       #8,D1
+            LSL.B       #4,D1
+            LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
+            
+            JSR         EA_MFIRST       ; decode data register
+
+            BRA         FINISHED
+
+            
+AND_EA      MOVE.W      (A6),D1         ; move address to D1
+            ROR.W       #8,D1
+            LSL.B       #4,D1
+            LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
+            
+            JSR         EA_MFIRST       ; decode data register
+            
+            MOVE.B      #$2C,(A4)+      ; ,
+            
+            MOVE.W      (A6),D1         ; move address to D1
+            LSL.W       #3,D1           
+            LSR.W       #3,D1           ; clear opmode from bottom word
+            
+            JSR         EA_MFIRST       ; decode effective address
+
+            BRA         FINISHED
             
 
 AND_CHECK   CLR.L       D1              ; clear D1
@@ -443,41 +484,75 @@ AND_CHECK   CLR.L       D1              ; clear D1
             AND.B       #$03,D1         ; mask other bits
             CMP.B       #$0,D1          ; 00 = invalid
             BEQ         DATA
-            JMP         AND_CONFIRM     ; confirmed to be AND
+            JMP         AND_VALID       ; confirmed to be valid
 
 
 *--------------------------------------------------------------
 *           NOT
 *--------------------------------------------------------------
-NOT         MOVE.B      'N',(A4)+       ; store opcode message in string address
-            MOVE.B      'O',(A4)+       
-            MOVE.B      'T',(A4)+       
+NOT         MOVE.B      #$4E,(A4)+      ; N
+            MOVE.B      #$4F,(A4)+      ; O
+            MOVE.B      #$54,(A4)+      ; T
             CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask bits
+            
             CMP.B       #$0,D1          ; 00 = byte
             BEQ         BYTE_SIZE
             CMP.B       #$01,D1         ; 01 = word
             BEQ         WORD_SIZE       
             CMP.B       #$02,D1         ; 10 = long
-            BEQ         LONG_SIZE       
-            JMP         DATA            ; else size is invalid
+            BEQ         LONG_SIZE 
+            CMP.B       #$03,D1         ; 11 = invalid      
+            BEQ         DATA
+            
+            MOVE.B      #$20,(A4)+      ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
+            BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           LSL
 *--------------------------------------------------------------
-LSL         CLR.L       D1              ; clear D1
+LSL         MOVE.B      #$4C,(A4)+      ; L
+            MOVE.B      #$53,(A4)+      ; S
+            MOVE.B      #$4C,(A4)+      ; L
+            CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
+            BTST        #8,D1           ; test 8th bit
+            BEQ         DATA            ; if 0, this is LSR, unsupported
+            
+            MOVE.B      #$20,(A4)+      ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
             BRA         FINISHED
 
 
 *--------------------------------------------------------------
 *           ASR
 *--------------------------------------------------------------
-ASR         CLR.L       D1              ; clear D1
+ASR         MOVE.B      #$41,(A4)+      ; A
+            MOVE.B      #$53,(A4)+      ; S
+            MOVE.B      #$52,(A4)+      ; R
+            CLR.L       D1              ; clear D1
             MOVE.W      (A6),D1         ; move address to D1
+            BTST        #8,D1           ; test 8th bit
+            BNE         DATA            ; if 1, this is ASL, unsupported
+            
+            MOVE.B      #$20,(A4)+      ; SPACES
+            MOVE.B      #$20,(A4)+
+            MOVE.B      #$20,(A4)+
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
             BRA         FINISHED
 
 
@@ -912,6 +987,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
