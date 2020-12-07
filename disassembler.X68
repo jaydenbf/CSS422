@@ -847,7 +847,7 @@ IMM_LONG    MOVE.L      (A6),D1     ; pull next long
             SWAP        D1
             JSR         HEX_ASCII   ; convert upper word into ascii at $100-$103
             
-            ADDA.L      #4,A1
+            ADDA.L      #2,A1
             SWAP        D1
             JSR         HEX_ASCII   ; conver lower word into ascii at $104-$107
             
@@ -867,7 +867,7 @@ DIR_WORD    MOVE.B      #'$',(A4)+  ; address is in hex
 
             CLR.L       D1
             MOVE.W      (A6),D1     ; pull next word
-            ADDA.L      #4,A6       ; move past the word
+            ADDA.L      #2,A6       ; move past the word
             
             MOVEA.L     #$100,A1
             JSR         HEX_ASCII   ; convert D1 into ascii at $100-$103
@@ -884,7 +884,7 @@ DIR_LONG    MOVE.B      #'$',(A4)+  ; address is in hex
 
             CLR.L       D1
             MOVE.L      (A6),D1     ; pull next long
-            ADDA.L      #8,A6       ; move past the long
+            ADDA.L      #4,A6       ; move past the long
             
             MOVEA.L     #$100,A1
             SWAP        D1
