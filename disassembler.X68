@@ -488,71 +488,69 @@ LEA_VALID   JSR         EA_MFIRST       ; print ea
 *--------------------------------------------------------------
 *           AND
 *--------------------------------------------------------------
-AND         CLR.L       D1              ; clear D1
-            MOVE.W      D5,D1         ; move address to D1
-            LSR.L       #6,D1           ; bring 6th and 7th bit to front
-            AND.B       #$03,D1         ; mask other bits
-            CMP.B       #$03,D1         ; 11 = invalid, could be MULS
-            BEQ         DATA
-            MOVE.W      D5,D1         ; move address to D1
-            BTST        #8,D1           ; test 8th bit
-            BNE         AND_CHECK       ; if 0, dn is destination, further check if valid
-            
-AND_VALID   MOVE.B      #$41,(A4)+      ; A
-            MOVE.B      #$4E,(A4)+      ; N
-            MOVE.B      #$44,(A4)+      ; D
-            JMP         OP_SIZE         ; get size of opcode
-            MOVE.B      #$20,(A4)+      ; SPACES
-            MOVE.B      #$20,(A4)+
-            MOVE.B      #$20,(A4)+
-            MOVE.W      D5,D1         ; move address to D1
-            BTST        #8,D1           ; test 8th bit
-            BNE         AND_EA          ; if 8th bit is 0, dn is destination
-                                        ; if 8th bit is 1, ea is destination
-                                        
-            MOVE.W      D5,D1         ; move address to D1
-            LSL.W       #3,D1           
-            LSR.W       #3,D1           ; clear opmode from bottom word
-            
-            JSR         EA_MFIRST       ; decode effective address
+AND         MOVE.W      D5,D1       ; copy opcode
 
-            MOVE.B      #$2C,(A4)+      ; ,
+            ROR.W       #8,D1
+            LSR.B       #4,D1
+            CMPI.B      #$0C,D1     ; verify first 4 bits are 1100
+            BNE         DATA
             
-            MOVE.W      D5,D1         ; move address to D1
+            MOVE.B      #'A',(A4)+  ; A
+            MOVE.B      #'N',(A4)+  ; N
+            MOVE.B      #'D',(A4)+  ; D
+            
+AND_SUB     JSR         OP_SIZE     ; print size of operation
+            
+            MOVE.B      #' ',(A4)+  ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+
+            LSL.W       #7,D1
+            LSR.W       #7,D1
+            LSR.W       #7,D1       
+            LSR.W       #1,D1       ; isolate 8th bit
+            
+            CMPI.W      #$0000,D1
+            BNE         ANDSUB_EA   ; if 8th bit is 1, ea is destination
+                                    ; if 8th bit is 0, dn is destination
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+            
+            LSL.W       #3,D1
+            LSR.W       #3,D1       ; clear opmode from bottom word
+            
+            JSR         EA_MFIRST   ; decode effective address
+
+            MOVE.B      #$2C,(A4)+   ; ,
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
             ROR.W       #8,D1
             LSL.B       #4,D1
-            LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
+            LSR.B       #5,D1       ; isolate register (last word is 0000 0RRR)
             
-            JSR         EA_MFIRST       ; decode data register
+            JSR         EA_MFIRST   ; decode data register
 
             BRA         FINISHED
 
-            
-AND_EA      MOVE.W      D5,D1         ; move address to D1
+ANDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
             ROR.W       #8,D1
             LSL.B       #4,D1
-            LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
+            LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
             
-            JSR         EA_MFIRST       ; decode data register
-            
-            MOVE.B      #$2C,(A4)+      ; ,
-            
-            MOVE.W      D5,D1         ; move address to D1
-            LSL.W       #3,D1           
-            LSR.W       #3,D1           ; clear opmode from bottom word
-            
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST   ; decode data register
 
+            MOVE.B      #$2C,(A4)+   ; ,
+            
+            MOVE.W      D5,D1       ; reset d1 to right opcode
+            
+            LSL.B       #3,D1
+            LSR.B       #3,D1       ; clear opmode from bottom byte
+            
+            JSR         EA_MFIRST   ; decode effective address
+            
             BRA         FINISHED
-            
-
-AND_CHECK   CLR.L       D1              ; clear D1
-            MOVE.W      D5,D1         ; move address to D1
-            LSR.L       #4,D1           ; bring 4th and 5th bit to front
-            AND.B       #$03,D1         ; mask other bits
-            CMP.B       #$0,D1          ; 00 = invalid
-            BEQ         DATA
-            JMP         AND_VALID       ; confirmed to be valid
 
 
 *--------------------------------------------------------------
@@ -1225,6 +1223,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
