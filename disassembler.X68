@@ -519,11 +519,16 @@ NOT         MOVE.B      #$4E,(A4)+      ; N
 *--------------------------------------------------------------
 *           LSL
 *--------------------------------------------------------------
-LSL         MOVE.B      #$4C,(A4)+      ; L
+LSL         MOVE.W      D5,D1
+            ANDI.W      #%1111000000011000,D1
+            CMPI.W      #%1110000000001000,D1
+            BNE         DATA
+
+            MOVE.B      #$4C,(A4)+      ; L
             MOVE.B      #$53,(A4)+      ; S
             MOVE.B      #$4C,(A4)+      ; L
             CLR.L       D1              ; clear D1
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             BTST        #8,D1           ; test 8th bit
             BEQ         DATA            ; if 0, this is LSR, unsupported
             
@@ -539,7 +544,12 @@ LSL         MOVE.B      #$4C,(A4)+      ; L
 *--------------------------------------------------------------
 *           ASR
 *--------------------------------------------------------------
-ASR         MOVE.B      #$41,(A4)+      ; A
+ASR         MOVE.W      D5,D1
+            ANDI.W      #%1111000000011000,D1
+            CMPI.W      #%1111000000000000,D1
+            BNE         DATA
+
+            MOVE.B      #$41,(A4)+      ; A
             MOVE.B      #$53,(A4)+      ; S
             MOVE.B      #$52,(A4)+      ; R
             CLR.L       D1              ; clear D1
