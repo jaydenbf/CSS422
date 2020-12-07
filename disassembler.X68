@@ -421,12 +421,12 @@ LEA         MOVE.B      #'L',(A4)+
 *           AND
 *--------------------------------------------------------------
 AND         CLR.L       D1              ; clear D1
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask other bits
             CMP.B       #$03,D1         ; 11 = invalid, could be MULS
             BEQ         DATA
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             BTST        #8,D1           ; test 8th bit
             BNE         AND_CHECK       ; if 0, dn is destination, further check if valid
             
@@ -437,12 +437,12 @@ AND_VALID   MOVE.B      #$41,(A4)+      ; A
             MOVE.B      #$20,(A4)+      ; SPACES
             MOVE.B      #$20,(A4)+
             MOVE.B      #$20,(A4)+
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             BTST        #8,D1           ; test 8th bit
             BNE         AND_EA          ; if 8th bit is 0, dn is destination
                                         ; if 8th bit is 1, ea is destination
                                         
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             LSL.W       #3,D1           
             LSR.W       #3,D1           ; clear opmode from bottom word
             
@@ -450,7 +450,7 @@ AND_VALID   MOVE.B      #$41,(A4)+      ; A
 
             MOVE.B      #$2C,(A4)+      ; ,
             
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             ROR.W       #8,D1
             LSL.B       #4,D1
             LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
@@ -460,7 +460,7 @@ AND_VALID   MOVE.B      #$41,(A4)+      ; A
             BRA         FINISHED
 
             
-AND_EA      MOVE.W      (A6),D1         ; move address to D1
+AND_EA      MOVE.W      D5,D1         ; move address to D1
             ROR.W       #8,D1
             LSL.B       #4,D1
             LSR.B       #5,D1           ; isolate register (last word is 0000 0RRR)
@@ -469,7 +469,7 @@ AND_EA      MOVE.W      (A6),D1         ; move address to D1
             
             MOVE.B      #$2C,(A4)+      ; ,
             
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             LSL.W       #3,D1           
             LSR.W       #3,D1           ; clear opmode from bottom word
             
@@ -479,7 +479,7 @@ AND_EA      MOVE.W      (A6),D1         ; move address to D1
             
 
 AND_CHECK   CLR.L       D1              ; clear D1
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             LSR.L       #4,D1           ; bring 4th and 5th bit to front
             AND.B       #$03,D1         ; mask other bits
             CMP.B       #$0,D1          ; 00 = invalid
@@ -494,7 +494,7 @@ NOT         MOVE.B      #$4E,(A4)+      ; N
             MOVE.B      #$4F,(A4)+      ; O
             MOVE.B      #$54,(A4)+      ; T
             CLR.L       D1              ; clear D1
-            MOVE.W      (A6),D1         ; move address to D1
+            MOVE.W      D5,D1         ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask bits
             
@@ -987,6 +987,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
