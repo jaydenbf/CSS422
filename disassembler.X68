@@ -499,59 +499,8 @@ AND         MOVE.W      D5,D1       ; copy opcode
             MOVE.B      #'N',(A4)+  ; N
             MOVE.B      #'D',(A4)+  ; D
             
-AND_SUB     JSR         OP_SIZE     ; print size of operation
+            BRA         ADD_SUB     ; reuse decoding for add because they are the same
             
-            MOVE.B      #' ',(A4)+  ; SPACES
-            MOVE.B      #' ',(A4)+
-            MOVE.B      #' ',(A4)+
-            
-            MOVE.W      D5,D1       ; reset d1 to right opcode
-
-            LSL.W       #7,D1
-            LSR.W       #7,D1
-            LSR.W       #7,D1       
-            LSR.W       #1,D1       ; isolate 8th bit
-            
-            CMPI.W      #$0000,D1
-            BNE         ANDSUB_EA   ; if 8th bit is 1, ea is destination
-                                    ; if 8th bit is 0, dn is destination
-            
-            MOVE.W      D5,D1       ; reset d1 to right opcode
-            
-            LSL.W       #3,D1
-            LSR.W       #3,D1       ; clear opmode from bottom word
-            
-            JSR         EA_MFIRST   ; decode effective address
-
-            MOVE.B      #$2C,(A4)+   ; ,
-            
-            MOVE.W      D5,D1       ; reset d1 to right opcode
-            ROR.W       #8,D1
-            LSL.B       #4,D1
-            LSR.B       #5,D1       ; isolate register (last word is 0000 0RRR)
-            
-            JSR         EA_MFIRST   ; decode data register
-
-            BRA         FINISHED
-
-ANDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
-            ROR.W       #8,D1
-            LSL.B       #4,D1
-            LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
-            
-            JSR         EA_MFIRST   ; decode data register
-
-            MOVE.B      #$2C,(A4)+   ; ,
-            
-            MOVE.W      D5,D1       ; reset d1 to right opcode
-            
-            LSL.B       #3,D1
-            LSR.B       #3,D1       ; clear opmode from bottom byte
-            
-            JSR         EA_MFIRST   ; decode effective address
-            
-            BRA         FINISHED
-
 
 *--------------------------------------------------------------
 *           NOT
@@ -560,7 +509,7 @@ NOT         MOVE.B      #$4E,(A4)+      ; N
             MOVE.B      #$4F,(A4)+      ; O
             MOVE.B      #$54,(A4)+      ; T
             CLR.L       D1              ; clear D1
-            MOVE.W      D5,D1         ; move address to D1
+            MOVE.W      D5,D1           ; move address to D1
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask bits
             
