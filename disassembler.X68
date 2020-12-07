@@ -574,49 +574,26 @@ Bcc         BRA         FINISHED
 
 *--------------------------------------------------------------
 *           JSR
-* D1 - EA mode
-* D2 - register
-* D5 - current opcode
-* A4 - output
-* A5 - current address
 *--------------------------------------------------------------
-JSR     CMPI.W  #$4E80, D5
+JSR     CLR.L   D3
+        MOVE.W  D5,D3
+        LSR.L   #6,D3
+        CMPI.W  #$13A, D3
         BNE     DATA
         MOVE.B     #$4A,(A4)+          *4A -- J
         MOVE.B     #$53,(A4)+          *53  -- S   
         MOVE.B     #$52,(A4)+          *52   --R
-        MOVE.W      D5,D1              * D1 stores EA mode
-        MOVE.W      D5,D2              * D2 stores register
-        LSR         #3,D1
-        ANDI.W      #$0007,D2          *EA    
-        ANDI.W     #$0007,D4           *register
-        BRA         check_jsr   
-        BRA         EA_MFIRST           add ea and register to A4
-        
+        MOVE.B     #$20,(A4)+
+        MOVE.B     #$20,(A4)+
+        MOVE.B     #$20,(A4)+
+        MOVE.B     #$20,(A4)+        
+        ANDI.W      #%0000000000111000,D3
+        JSR         EA_MFIRST       *add ea and register to A4
+        LSR.L       #6,D1           ; move register to front
+        LSR.L       #3,D1
+        ADD.L       #%0000,D1               
+        JSR         EA_MFIRST                           
         BRA         FINISHED
-   
-check_jsr   CMP.B   #%000, D1       *invalid
-            BEQ     DATA
-            CMP.B   #%001, D1       *invalid
-            BEQ     DATA
-            CMP.B   #%011, D1       *invalid
-            BEQ     DATA  
-            CMP.B   #%100, D1       *invalid
-            BEQ     DATA  
-            CMP.B   #%111, D1       * check register
-            BRA     check_jsr_register   
-            RTS  
- 
-check_jsr_register
-            CMP.B    #%100,D2        
-            BEQ     DATA
-            CMP.B    #%101,D2        
-            BEQ     DATA 
-            CMP.B    #%110,D2        
-            BEQ     DATA 
-            CMP.B    #%111,D2        
-            BEQ     DATA         
-            RTS
 
 
 
