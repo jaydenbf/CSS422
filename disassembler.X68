@@ -684,37 +684,38 @@ BCC_32      MOVE.B      #'.',(A4)+
 *--------------------------------------------------------------
 *           JSR
 *--------------------------------------------------------------
-JSR     CLR.L   D3
-        MOVE.W  D5,D3
-        LSR.L   #6,D3
-        CMPI.W  #$13A, D3
-        BNE     DATA
-        MOVE.B     #'J',(A4)+          *4A -- J
-        MOVE.B     #'S',(A4)+          *53  -- S   
-        MOVE.B     #'R',(A4)+          *52   --R
-        MOVE.B     #' ',(A4)+
-        MOVE.B     #' ',(A4)+
-        MOVE.B     #' ',(A4)+
-        MOVE.B     #' ',(A4)+
-        MOVE.B     #' ',(A4)+           
-        ANDI.W      #%0000000000111000,D3
+JSR         CLR.L   D3
+            MOVE.W  D5,D3
+            LSR.L   #6,D3
+            CMPI.W  #$13A, D3
+            BNE     DATA
+            MOVE.B     #'J',(A4)+          *4A -- J
+            MOVE.B     #'S',(A4)+          *53  -- S   
+            MOVE.B     #'R',(A4)+          *52   --R
+            MOVE.B     #' ',(A4)+
+            MOVE.B     #' ',(A4)+
+            MOVE.B     #' ',(A4)+
+            MOVE.B     #' ',(A4)+
+            MOVE.B     #' ',(A4)+           
+            ANDI.W      #%0000000000111000,D3
 
-        LSR.L       #6,D1           ; move register to front
-        LSR.L       #3,D1
-        ADD.L       #%0000,D1
+            LSR.L       #6,D1           ; move register to front
+            LSR.L       #3,D1
+            ADD.L       #%0000,D1
 
 
-        MOVE.B      D1,D2       ; check for valid modes
-        CMPI.B      #%111000,D2
-        BEQ         DATA        ; dest can be direct (word)
-        CMPI.B      #%111001,D2
-        BEQ         DATA        ; dest can be direct (long)
-        LSR.B       #3,D2
-        CMPI.B      #%010,D2    ; dest can be (An)
-        BEQ         DATA
+            MOVE.B      D1,D2       ; check for valid modes
+            CMPI.B      #%111000,D2
+            BEQ         JSR_VALID       ; dest can be direct (word)
+            CMPI.B      #%111001,D2
+            BEQ         JSR_VALID        ; dest can be direct (long)
+            LSR.B       #3,D2
+            CMPI.B      #%010,D2    ; dest can be (An)
+            BEQ         JSR_VALID
+            BRA         DATA
        
-        JSR         EA_MFIRST                           
-        BRA         FINISHED
+JSR_VALID   JSR         EA_MFIRST                           
+            BRA         FINISHED
 
 
 
