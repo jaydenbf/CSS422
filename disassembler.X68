@@ -21,8 +21,8 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.L      #$6000FF04,$4000
-            MOVE.L      #$6000FF18,$4004
+            MOVE.L      #$D391D399,$4000
+            MOVE.L      #$D3A1D291,$4004
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -361,8 +361,9 @@ ADD_SUB     JSR         OP_SIZE     ; print size of operation
 
 ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
 
-            LSL.B       #4,D1
-            LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
+            LSR.W       #4,D1
+            LSR.W       #5,D1       ; isolate register (last byte is 0000 0RRR)
+            AND.B       #$07,D1
             
             JSR         EA_MFIRST   ; decode data register
 
@@ -370,8 +371,8 @@ ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
             
             MOVE.W      D5,D1       ; reset d1 to right opcode
             
-            LSL.B       #3,D1
-            LSR.B       #3,D1       ; clear opmode from bottom byte
+            LSL.W       #3,D1
+            LSR.W       #3,D1       ; clear opmode from bottom byte
             
             MOVE.B      D1,D2       ; check for invalid modes
             CMPI.B      #%111100,D2
