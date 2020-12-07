@@ -205,7 +205,7 @@ BITS_011    ASL.W       #1,D1           ; Bcc if any of next 4 bits are 1
             BCS         Bcc
             BRA         BRA             ; BRA otherwise
 
-BITS_010X0  ASL.W       #4,D1
+BITS_010X0  ASL.W       #3,D1
             BCC         NOT             ; NOT
             BCS         LEA             ; LEA
             
@@ -1303,6 +1303,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
