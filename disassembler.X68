@@ -535,8 +535,16 @@ NOT         MOVE.B      #'N',(A4)+      ; N
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             
+            CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             ANDI.W      #%0000000000111111,D1 ; iso effective address
+
+            MOVE.B      D1,D2           ; check for valid modes
+            CMPI.B      #%111100,D2
+            BEQ         DATA            ; dest cannot be immediate
+            LSR.B       #3,D2
+            CMPI.B      #%010,D2        ; dest cannot be An
+            BEQ         DATA
        
             JSR         EA_MFIRST       ; decode effective address     
               
@@ -1185,6 +1193,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
