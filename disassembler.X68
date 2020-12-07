@@ -291,10 +291,15 @@ MOVE_SIZED  MOVE.B      #' ',(A4)+      ; SPACES
             ; at this point we have D1 -> 0000000000111000 1s being mode
             ;                       D2 -> 0000000000000111 1s being register
             
-            CMPI.B      #%00001000,D1
+            CMPI.B      #%001000,D1     ; check if dest. is An
             BEQ         DATA
             
-            ADD.L       D2,D1
+            CMPI.B      #%111000,D1     ; check if dest. is immediate data
+            BNE         MOVE_NOTI
+            CMPI.B      #%000100,D2
+            BEQ         DATA
+            
+MOVE_NOTI   ADD.L       D2,D1
             JSR         EA_MFIRST       ; D1 is ready for destination ea print
             
             BRA         FINISHED
@@ -343,7 +348,7 @@ ADD_SUB     JSR         OP_SIZE     ; print size of operation
             
             JSR         EA_MFIRST   ; decode effective address
 
-            MOVE.B      #$2C,(A4)+   ; ,
+            MOVE.B      #',',(A4)+   ; ,
             
             MOVE.W      D5,D1       ; reset d1 to right opcode
             ROR.W       #8,D1
@@ -361,13 +366,22 @@ ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
             
             JSR         EA_MFIRST   ; decode data register
 
-            MOVE.B      #$2C,(A4)+   ; ,
+            MOVE.B      #',',(A4)+   ; ,
             
             MOVE.W      D5,D1       ; reset d1 to right opcode
             
             LSL.B       #3,D1
             LSR.B       #3,D1       ; clear opmode from bottom byte
             
+            MOVE.B      D1,D2       ; check for invalid modes
+            CMPI.B      #%111100
+            BEQ         DATA        ; dest can't be immediate data
+            LSR.B       #3,D2
+            CMPI.B      #%000,D2    ; dest can't be Dn
+            BEQ         DATA
+            CMPI.B      #%001,D2    ; dest can't be An
+            BEQ         DATA
+
             JSR         EA_MFIRST   ; decode effective address
             
             BRA         FINISHED
@@ -417,6 +431,12 @@ MULS        MOVE.W      D5,D1       ; copy opcode
             ANDI.W      #%0000111000000000,D1 ; keep destination dr related bits
             ROR.W       #8,D1       ; bring 9th,10th,11th bits to front
             LSR.B       #1,D1
+            
+            MOVE.B      D1,D2       ; check for invalid modes
+            LSR.B       #3,D2
+            CMPI.B      #%001,D2    ; dest can't be An
+            BEQ         DATA
+            
             JSR         EA_MFIRST   ; decode data register
             
             BRA         FINISHED
@@ -438,7 +458,18 @@ LEA         MOVE.B      #'L',(A4)+
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             ANDI.W      #%0000000000111111,D1 ; iso effective address
-            JSR         EA_MFIRST       ; print ea
+            
+            MOVE.B      D1,D2       ; check for valid modes
+            CMPI.B      #%111000
+            BEQ         LEA_VALID   ; dest can be direct (word)
+            CMPI.B      #%111001
+            BEQ         LEA_VALID   ; dest can be direct (long)
+            LSR.B       #3,D2
+            CMPI.B      #%010,D2    ; dest can be (An)
+            BEQ         LEA_VALID
+            BRA         DATA        ; any other mode is invalid
+            
+LEA_VALID   JSR         EA_MFIRST       ; print ea
             
             MOVE.B      #',',(A4)+
             
@@ -713,7 +744,18 @@ JSR     CLR.L   D3
 
         LSR.L       #6,D1           ; move register to front
         LSR.L       #3,D1
-        ADD.L       #%0000,D1               
+        ADD.L       #%0000,D1
+
+
+        MOVE.B      D1,D2       ; check for valid modes
+        CMPI.B      #%111000
+        BEQ         DATA        ; dest can be direct (word)
+        CMPI.B      #%111001
+        BEQ         DATA        ; dest can be direct (long)
+        LSR.B       #3,D2
+        CMPI.B      #%010,D2    ; dest can be (An)
+        BEQ         DATA
+       
         JSR         EA_MFIRST                           
         BRA         FINISHED
 
@@ -1174,8 +1216,8 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
             
 
 WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
-SADDR       DC.B        CR,LF,'Please enter your starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
-EADDR       DC.B        CR,LF,'Please enter your ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
+SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
+EADDR       DC.B        CR,LF,'Please enter your even ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
 ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
