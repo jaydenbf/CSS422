@@ -21,7 +21,8 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.W      #$9300,$4000
+            MOVE.L      #$6000FF04,$4000
+            MOVE.L      #$6000FF18,$4004
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -427,7 +428,10 @@ MULS        MOVE.W      D5,D1       ; copy opcode
 LEA         MOVE.B      #'L',(A4)+
             MOVE.B      #'E',(A4)+
             MOVE.B      #'A',(A4)+ 
-            MOVE.B      #' ',(A4)+  ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
   
@@ -600,10 +604,94 @@ ASR         MOVE.W      D5,D1
 
 
 *--------------------------------------------------------------
-*           Bcc
+*           Bcc (only BLT BGE BEQ)
 *--------------------------------------------------------------
-Bcc         BRA         FINISHED
+Bcc         MOVE.W      D5,D1
+            ROL.W       #4,D1
+            AND.B       #$0F,D1         ; isolate first 4 bits
+            CMPI.B      #$06,D1         ; confirm first four bits are 0110 for Bcc
+            BNE         DATA
 
+            ROL.W       #4,D1
+            AND.B       #$0F,D1         ; isolate condition bits
+
+            CMPI.B      #%0111,D1            
+            BEQ         BEQ             ; BEQ
+            
+            CMPI.B      #%1101,D1
+            BEQ         BLT             ; BLT
+            
+            CMPI.B      #%1100,D1
+            BEQ         BGE             ; BGE
+            
+            BRA         DATA            ; not a supported condition
+            
+BEQ         MOVE.B      #'B',(A4)+
+            MOVE.B      #'E',(A4)+
+            MOVE.B      #'Q',(A4)+
+         
+            MOVE.W      D5,D1
+            JSR         BCC_SIZE
+            
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+                        
+            MOVE.W      D5,D1
+            ROR.W       #8,D1
+            
+            BRA         OR_BCC          ; uses branch from here on out, identical to decode
+
+BLT         MOVE.B      #'B',(A4)+
+            MOVE.B      #'L',(A4)+
+            MOVE.B      #'T',(A4)+
+            
+            MOVE.W      D5,D1
+            JSR         BCC_SIZE
+            
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+                        
+            MOVE.W      D5,D1
+            ROR.W       #8,D1
+            
+            BRA         OR_BCC          ; uses branch from here on out, identical to decode
+            
+BGE         MOVE.B      #'B',(A4)+
+            MOVE.B      #'G',(A4)+
+            MOVE.B      #'E',(A4)+
+         
+            MOVE.W      D5,D1
+            JSR         BCC_SIZE
+            
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            
+            MOVE.W      D5,D1
+            ROR.W       #8,D1
+            
+            BRA         OR_BCC          ; uses branch from here on out, identical to decode
+            
+            
+BCC_SIZE    CMPI.B      #$00,D1
+            BEQ         BCC_16
+            
+            CMPI.B      #$FF,D1
+            BEQ         BCC_32
+            
+            MOVE.B      #'.',(A4)+
+            MOVE.B      #'B',(A4)+
+            RTS
+            
+BCC_16      MOVE.B      #'.',(A4)+
+            MOVE.B      #'W',(A4)+
+            RTS
+            
+BCC_32      MOVE.B      #'.',(A4)+
+            MOVE.B      #'L',(A4)+
+            RTS
 
 *--------------------------------------------------------------
 *           JSR
@@ -613,13 +701,14 @@ JSR     CLR.L   D3
         LSR.L   #6,D3
         CMPI.W  #$13A, D3
         BNE     DATA
-        MOVE.B     #$4A,(A4)+          *4A -- J
-        MOVE.B     #$53,(A4)+          *53  -- S   
-        MOVE.B     #$52,(A4)+          *52   --R
-        MOVE.B     #$20,(A4)+
-        MOVE.B     #$20,(A4)+
-        MOVE.B     #$20,(A4)+
-        MOVE.B     #$20,(A4)+        
+        MOVE.B     #'J',(A4)+          *4A -- J
+        MOVE.B     #'S',(A4)+          *53  -- S   
+        MOVE.B     #'R',(A4)+          *52   --R
+        MOVE.B     #' ',(A4)+
+        MOVE.B     #' ',(A4)+
+        MOVE.B     #' ',(A4)+
+        MOVE.B     #' ',(A4)+
+        MOVE.B     #' ',(A4)+           
         ANDI.W      #%0000000000111000,D3
 
         LSR.L       #6,D1           ; move register to front
@@ -640,9 +729,9 @@ JSR     CLR.L   D3
 RTS     
         CMPI.W      #$4E75,D5
         BNE         DATA
-        MOVE.B    #$52,(A4)+     *store opcode messge in string address
-        MOVE.B    #$54,(A4)+     *store opcode messge in string address
-        MOVE.B    #$53,(A4)+     *store opcode messge in string address
+        MOVE.B      #'R',(A4)+
+        MOVE.B      #'T',(A4)+ 
+        MOVE.B      #'S',(A4)+
         BRA         FINISHED
 
 
@@ -650,7 +739,94 @@ RTS
 *--------------------------------------------------------------
 *           BRA
 *--------------------------------------------------------------
-BRA         BRA         FINISHED
+BRA         CLR.L       D1
+            MOVE.W      D5,D1       ; reset opcode
+            ROR.W       #8,D1       ; get last byte to front
+            CMPI.B      #$60,D1     ; make sure its 01100000
+            BNE         DATA        ; not bra
+            
+            MOVE.B      #'B',(A4)+
+            MOVE.B      #'R',(A4)+
+            MOVE.B      #'A',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            
+OR_BCC      MOVE.L      A6,D2       ; address of the next instruction
+                                    ; is the address of this instruction plus 2
+                                    ; which is the program counter
+            
+            ROR.W       #8,D1       ; move first byte to front
+            CMPI.B      #$00,D1     ; check if it's $00
+            BEQ         BRA_16      ; 16-bit displacement
+            CMPI.B      #$FF,D1     ; check if it's $FF
+            BEQ         BRA_32      ; 32-bit displacement
+                                    ; 8-bit displacement otherwise
+            
+            ; 8-bit displacement: no extention                   
+            AND.W       #$00FF,D1   ; isolate last 8 bits (displacement)
+            ADD.B       D1,D2       ; add displacement to pc
+            MOVE.W      D2,D1       ; now have bra address in d1
+            MOVE.B      #'$',(A4)+
+            
+            MOVEA.L     #$100,A1                        
+            JSR         HEX_ASCII
+            
+            MOVE.B      $100,(A4)+
+            MOVE.B      $101,(A4)+
+            MOVE.B      $102,(A4)+
+            MOVE.B      $103,(A4)+  ; print out the long
+            
+            BRA         FINISHED
+            
+BRA_16      ; 16-bit displacement: word extention
+            CLR.L       D1
+            MOVE.W      (A6),D1     ; get next word
+            ADDA.L      #2,A6       ; increment current address
+            
+            ADD.W       D2,D1       ; add program counter to displacement
+                                    ; now have bra address in d1
+            
+            MOVE.B      #'$',(A4)+
+                        
+            MOVEA.L     #$100,A1                        
+            JSR         HEX_ASCII
+            
+            MOVE.B      $100,(A4)+
+            MOVE.B      $101,(A4)+
+            MOVE.B      $102,(A4)+
+            MOVE.B      $103,(A4)+  ; print out the word
+            
+            BRA         FINISHED
+            
+BRA_32      ; 32-bit displacement: long extention
+            MOVE.L      (A6),D1     ; get next long
+            ADDA.L      #4,A6       ; increment current address
+            
+            ADD.L       D2,D1       ; add program counter to displacement
+                                    ; now have bra address in d1
+            MOVE.B      #'$',(A4)+                        
+            
+            MOVEA.L     #$100,A1                        
+            SWAP        D1
+            JSR         HEX_ASCII
+            
+            MOVEA.L     #$104,A1
+            SWAP        D1
+            JSR         HEX_ASCII
+            
+            MOVE.B      $100,(A4)+
+            MOVE.B      $101,(A4)+
+            MOVE.B      $102,(A4)+
+            MOVE.B      $103,(A4)+
+            MOVE.B      $104,(A4)+
+            MOVE.B      $105,(A4)+
+            MOVE.B      $106,(A4)+
+            MOVE.B      $107,(A4)+  ; print out the long
+            
+            BRA         FINISHED
 
 *--------------------------------------------------------------
 *           DATA (invalid input)
