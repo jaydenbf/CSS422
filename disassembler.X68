@@ -391,7 +391,41 @@ SUB         MOVE.W      D5,D1       ; copy opcode
 *--------------------------------------------------------------
 *           MULS (MULS.L NOT SUPPORTED)
 *--------------------------------------------------------------
-MULS        BRA         FINISHED
+MULS        MOVE.W      D5,D1       ; copy opcode
+
+            ROR.W       #8,D1
+            LSR.B       #4,D1
+            CMPI.B      #$0C,D1     ; verify first 4 bits are 1100
+            BNE         DATA        ; not MULS
+            
+            MOVE.W      D5,D1       ; reset D1 opcode
+            ANDI.W      #%0000000111000000,D1 ; keep size related bits
+            ROR.W       #6,D1       ; bring 6th,7th,8th bits to front
+            CMPI.B      #%111,D1   ; verify 111 for only words
+            BNE         DATA        ; we do not support MULS.L
+            
+            MOVE.B      #'M',(A4)+  ; MULS.W   
+            MOVE.B      #'U',(A4)+  
+            MOVE.B      #'L',(A4)+   
+            MOVE.B      #'S',(A4)+  
+            MOVE.B      #'.',(A4)+
+            MOVE.B      #'W',(A4)+
+            MOVE.B      #' ',(A4)+  ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            
+            MOVE.W      D5,D1       ; reset D1 opcode
+            ANDI.W      #%0000000000111111,D1 ; keep ea only
+            JSR         EA_MFIRST   ; print/decode ea
+            MOVE.B      #',',(A4)+      ; print comma
+            
+            MOVE.W      D5,D1       ; reset D1 opcode
+            ANDI.W      #%0000111000000000,D1 ; keep destination dr related bits
+            ROR.W       #8,D1       ; bring 9th,10th,11th bits to front
+            LSR.B       #1,D1
+            JSR         EA_MFIRST   ; decode data register
+            
+            BRA         FINISHED
 
 
 *--------------------------------------------------------------
@@ -980,6 +1014,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
