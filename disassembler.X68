@@ -535,7 +535,13 @@ NOT         MOVE.B      #'N',(A4)+      ; N
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
 
-            
+            MOVE.B      D1,D2           ; check for valid modes
+            CMPI.B      #%111100,D2
+            BEQ         DATA            ; dest cannot be immediate
+            LSR.B       #3,D2
+            CMPI.B      #%010,D2        ; dest cannot be An
+            BEQ         DATA
+
             JSR         EA_MFIRST       ; decode effective address
             
             BRA         FINISHED
