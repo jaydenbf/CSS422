@@ -360,7 +360,7 @@ ADD_SUB     JSR         OP_SIZE     ; print size of operation
             BRA         FINISHED
 
 ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
-            ROR.W       #8,D1
+
             LSL.B       #4,D1
             LSR.B       #5,D1       ; isolate register (last byte is 0000 0RRR)
             
@@ -374,7 +374,7 @@ ADDSUB_EA   MOVE.W      D5,D1       ; reset d1 to right opcode
             LSR.B       #3,D1       ; clear opmode from bottom byte
             
             MOVE.B      D1,D2       ; check for invalid modes
-            CMPI.B      #%111100
+            CMPI.B      #%111100,D2
             BEQ         DATA        ; dest can't be immediate data
             LSR.B       #3,D2
             CMPI.B      #%000,D2    ; dest can't be Dn
@@ -460,9 +460,9 @@ LEA         MOVE.B      #'L',(A4)+
             ANDI.W      #%0000000000111111,D1 ; iso effective address
             
             MOVE.B      D1,D2       ; check for valid modes
-            CMPI.B      #%111000
+            CMPI.B      #%111000,D2
             BEQ         LEA_VALID   ; dest can be direct (word)
-            CMPI.B      #%111001
+            CMPI.B      #%111001,D2
             BEQ         LEA_VALID   ; dest can be direct (long)
             LSR.B       #3,D2
             CMPI.B      #%010,D2    ; dest can be (An)
@@ -695,9 +695,9 @@ JSR     CLR.L   D3
 
 
         MOVE.B      D1,D2       ; check for valid modes
-        CMPI.B      #%111000
+        CMPI.B      #%111000,D2
         BEQ         DATA        ; dest can be direct (word)
-        CMPI.B      #%111001
+        CMPI.B      #%111001,D2
         BEQ         DATA        ; dest can be direct (long)
         LSR.B       #3,D2
         CMPI.B      #%010,D2    ; dest can be (An)
@@ -1172,6 +1172,7 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
