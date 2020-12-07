@@ -289,6 +289,10 @@ MOVE_SIZED  MOVE.B      #' ',(A4)+      ; SPACES
             
             ; at this point we have D1 -> 0000000000111000 1s being mode
             ;                       D2 -> 0000000000000111 1s being register
+            
+            CMPI.B      #%00001000,D1
+            BEQ         DATA
+            
             ADD.L       D2,D1
             JSR         EA_MFIRST       ; D1 is ready for destination ea print
             
