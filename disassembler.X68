@@ -21,8 +21,32 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.L      #$D391D399,$4000
-            MOVE.L      #$D3A1D291,$4004
+            MOVE.L      #$FFFFFFFF,$700 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$704 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$708 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$712 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$716 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$500 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$504 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$508 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$512 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$516 ; done for restarting
+
+            CLR.L       D0
+            CLR.L       D1
+            CLR.L       D2
+            CLR.L       D3
+            CLR.L       D4
+            CLR.L       D5
+            CLR.L       D6
+            CLR.L       D7
+            MOVEA.L     D0,A0
+            MOVEA.L     D0,A1
+            MOVEA.L     D0,A2
+            MOVEA.L     D0,A3
+            MOVEA.L     D0,A4
+            MOVEA.L     D0,A5
+            MOVEA.L     D0,A6
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -120,8 +144,8 @@ FINDOP      LEA         CRLF,A1
             MOVE.B      #14,D0
             TRAP        #15             ; next line
 
-            CMPA.L      $710,A6         ; if we are at the final address
-            BEQ         DONE_OPCODE     ; done
+            CMPA.L      $710,A6         ; if we are past the final address
+            BGT         DONE_OPCODE     ; done
             
             MOVEA.L     #$00000000,A4   ; setup output
             
@@ -893,7 +917,19 @@ PRESS_ENTER LEA         ENTER_MSG,A1
 
 
 
-DONE_OPCODE SIMHALT                 ;   halt simulator
+DONE_OPCODE LEA         AGAIN_MSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15             ; would you like to disassemble again?
+            
+            MOVEA.L     #$100,A1
+            MOVE.B      #2,D0
+            TRAP        #15             ; request input
+            
+            CMPI.B      #'Y',(A1)
+            BEQ         START           ; if Y was entered, restart
+          
+
+            SIMHALT                 ;   halt simulator
 
 *--------------------------------------------------------------
 *           OP_SIZE
@@ -1179,12 +1215,13 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
            
             
 
-WLC         DC.B        'Welcome to Team Terminal''s disassembler!',CR,LF,0
+WLC         DC.B        CR,LF,'Welcome to Team Terminal''s disassembler!',CR,LF,0
 SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
 EADDR       DC.B        CR,LF,'Please enter your even ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
 INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
 ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
+AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
