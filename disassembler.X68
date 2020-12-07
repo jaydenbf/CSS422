@@ -405,6 +405,8 @@ LEA         MOVE.B      #'L',(A4)+
             ANDI.W      #%0000000000111111,D1 ; iso effective address
             JSR         EA_MFIRST       ; print ea
             
+            MOVE.B      #',',(A4)+
+            
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; copy opcode
             ANDI.W      #%0000111000000000,D1 ; iso data register
@@ -588,7 +590,7 @@ JSR     CLR.L   D3
         MOVE.B     #$20,(A4)+
         MOVE.B     #$20,(A4)+        
         ANDI.W      #%0000000000111000,D3
-        JSR         EA_MFIRST       *add ea and register to A4
+
         LSR.L       #6,D1           ; move register to front
         LSR.L       #3,D1
         ADD.L       #%0000,D1               
@@ -974,6 +976,8 @@ ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
+
 
 
 
