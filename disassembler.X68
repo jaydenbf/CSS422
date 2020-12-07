@@ -821,7 +821,7 @@ CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
             ; word (or byte but they both use a word)
             CLR.L        D1
             MOVE.W      (A6),D1     ; pull next word
-            ADDA.L      #4,A6       ; move past the word
+            ADDA.L      #2,A6       ; move past the word
             
             MOVE.B      #'#',(A4)+  ; data is immediate
             MOVE.B      #'$',(A4)+  ; data is in hex
@@ -838,7 +838,7 @@ CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
             BRA         DONE_EA
             
 IMM_LONG    MOVE.L      (A6),D1     ; pull next long
-            ADDA.L      #8,A6       ; move past the long
+            ADDA.L      #4,A6       ; move past the long
             
             MOVE.B      #'#',(A4)+  ; data is immediate
             MOVE.B      #'$',(A4)+  ; data is in hex
