@@ -51,6 +51,10 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVEA.L     D0,A4
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
+            
+            MOVE.L      #$48B9FE00,$4000
+            MOVE.L      #$12345678,$4004
+
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
@@ -370,221 +374,111 @@ MOVEM          MOVE.B   #'M',(A4)+
                LSR      #6,D1                   *shift to 6th bit
                ANDI.W   #$0001,D1               * 0--Word transfer  1--Long transfer       
                JSR      MOVEM_SIZE              *add .size to output
-               MOVE.B   #' ',(A4)+    
+               MOVE.B   #' ',(A4)+ 
                
                MOVE.W   D5,D1                   *reset D1
+               MOVE.B   #15,D7                  ; used for counting
                LSR      #8,D1
                LSR      #2,D1                   *shift to 10th bit
                ANDI.W   #$0001,D1               *0--Reg to mem   1--Mem to Reg
                CMP.B    #1,D1                   * the direction is Mem to Reg
                BEQ      Mem_Reg                
-               MOVE.W   D5,D1                   *reset D1
-               LSR      #8,D1
-               LSR      #2,D1                   
-               ANDI.W   #$0001,D1               *0--Reg to mem   1--Mem to Reg
-               CMP.B    #0,D1
-               BEQ      Reg_Mem                *the direction is Mem to Reg
-               BRA      FINISHED
+               BNE      Reg_Mem                 *the direction is reg to mem
 
 MOVEM_SIZE     CMP.B    #0,D1                   *0-Word 
                BEQ       WORD_SIZE
                CMP.B    #1,D1                   *1-Long
                BEQ       LONG_SIZE
-               RTS
-                            
+               RTS             
                
-Reg_Mem        MOVE.W   D5,D1                 
-               MOVE.W   D5,D2                 
-               JSR      RegList_Loop             *this loop is to print register list                 
-               MOVE.B   #',',(A4)+
-               JSR      EA_MFIRST               *print ea
+Reg_Mem         MOVE.W      D5,D1
+                MOVE.W      (A6),D2     ; get mask
+                ADDA.L      #2,A6       ; move past mask
+                
+                AND.B       #$38,D1
+                CMPI.B      #%00100000,D1  ; is it predecrement
+                BEQ         PRED
+                BNE         NPRED
+                
+Mem_Reg         MOVE.B      #$00,$9F    ; flag we are doing mem to reg
+                MOVE.W      D5,D1
+                MOVE.W      (A6),D2     ; get mask
+                ADDA.L      #2,A6       ; move past mask
+                
+                JSR         EA_MFIRST   ; print ea
+                
+                MOVE.B      #',',(A4)+
 
-               MOVE.W   D5,D2
-               LSL.B    #2,D1
-               LSL.B    #5,D2
-               LSR.B    #5,D1                   ;left with just 3 mode bits in D1
-               LSR.B    #5,D2                   ;left with just 3 reg bits in D2
-               JSR      Reg_Mem_Check           *check valid mode and register               
+                AND.B       #$38,D1
+                CMPI.B      #%00100000,D1  ; is it predecrement
+                BEQ         PRED
+                BNE         NPRED
+                
+Mem_Reg_Finish  SUBA.L      #1,A4
+                BRA         FINISHED
+                
+Reg_Mem_EA      CMPI.B      #$00,$9F
+                BEQ         Mem_Reg_Finish
+                
+                MOVE.W      D5,D1
+                SUBA.L      #1,A4
+                MOVE.B      #',',(A4)+
+                JSR         EA_MFIRST
+                BRA         FINISHED
+                
+PRED            MOVE.W      D2,D1
+                MOVE.B      #0,D4
+PRED_LOOP       ; instruction in D5, mask in D2
+                LSL.W       #1,D1
+                BCC         PRED_NSET
+                CMPI.B      #8,D7
+                BGE         PRED_D
+                MOVE.B      #'A',(A4)+
+                BRA         PRED_A
+PRED_D          MOVE.B      #'D',(A4)+
+PRED_A          MOVE.B      D4,D3
+                ADDI.B      #$30,D3
+                MOVE.B      D3,(A4)+    ; print reg number
+                MOVE.B      #'/',(A4)+
+PRED_NSET       CMPI.B      #0,D7
+                BEQ         Reg_Mem_EA
+
+                SUBQ.B      #1,D7
+                ADDQ.B      #1,D4
+                
+                CMPI.B      #8,D4
+                BNE         PRED_LOOP
+                MOVE.B      #0,D4
+                
+                BRA         PRED_LOOP                
+
+
+NPRED           MOVE.W      D2,D1
+                MOVE.B      #8,D4
+NPRED_LOOP      ; instruction in D5, mask in D2
+                SUBQ.B      #1,D4
+                LSL.W       #1,D1
+                BCC         NPRED_NSET
+                CMPI.B      #8,D7
+                BGE         NPRED_A
+                MOVE.B      #'D',(A4)+
+                BRA         NPRED_D
+NPRED_A         MOVE.B      #'A',(A4)+
+NPRED_D         MOVE.B      D4,D3
+                ADDI.B      #$30,D3
+                MOVE.B      D3,(A4)+    ; print reg number
+                MOVE.B      #'/',(A4)+
+NPRED_NSET      CMPI.B      #0,D7
+                BEQ         Reg_Mem_EA
+
+                SUBQ.B      #1,D7
+                
+                CMPI.B      #0,D4
+                BNE         NPRED_LOOP
+                MOVE.B      #8,D4
+                
+                BRA         NPRED_LOOP         
                
-
-               RTS
-
-Reg_Mem_Check  CMP.B    #%000,D1                *invalid mode for Reg to Mem    
-               BEQ      DATA
-               CMP.B    #%001,D1                *invalid mod
-               BEQ      DATA
-               CMP.B    #%011,D1                *invalid mod
-               BEQ      DATA
-
-               CMP.B    #%111,D1                *check register
-               BEQ      MOVEM_IMM
-               RTS           
-
-
-Mem_Reg        MOVE.W   D5,D1                 
-               JSR         EA_MFIRST          *print EA
-               MOVE.B   #',',(A4)+                             
-               JSR      RegList_Loop               *start the loop
-               MOVE.W   D5,D2  
-               LSL.B    #2,D1
-               LSL.B    #5,D2
-               LSR.B    #5,D1                   ;left with just 3 mode bits in D1
-               LSR.B    #5,D2                   ;left with just 3 reg bits in D2
-          
-               JSR      Mem_Reg_check
-               BRA      FINISHED
-               
-               
-Mem_Reg_check  CMP.B    #%000,D1
-               BEQ      DATA
-               CMP.B    #%001,D1
-               BEQ      DATA
-               CMP.B    #%100,D1
-               BEQ      DATA
-               CMP.B    #%111,D1
-               BEQ      MOVEM_IMM                 *Check for immediate data
-               BRA      FINISHED
-
-
-
-MOVEM_IMM      CMP.B    #%100,D2                
-               BEQ      DATA
-               RTS                   
- 
-               
-              
-RegList_Loop   MOVE.W   D1,-(SP)                *Save currnet opcode in stack
-               MOVE.B   #0,D3                   *D3 - counter for the loop
-               MOVE.W   D5,D2
-               LSR      #3,D2
-               ANDI.W   #%111,D2
-               CMP.B    #%100,D2
-               BEQ      movemdecrLoopD           *Start the pre decrement loop
-               MOVE.B   #8,D3                    *Otherwise, start counter for other loop
-               JMP      movemLoopA               *Start other loop
-               
-movemLoopA     CMP.B    #0,D3
-               BEQ      loopAdone                *Processed the address registers
-               SUB.B    #1,D3                    *Otherwise, decrement counter
-               LSR      #8,D1
-               LSR      #7,D1                    *Get the most significant bit
-               CMP.W    #$1,D1
-               BEQ      movemAtrue               *Bit is on
-               MOVE.W   (SP),D1                  *Get original word from stack
-               ROL.W    #1,D1                    *Rotate word to put next bit is MSB
-               MOVE.W   D1,(SP)                  *Save word onto the stack again
-               BRA      movemLoopA               *Go back to loop
-
-movemAtrue     MOVE.B   D3,D1                    *Current number in the list
-               MOVE.B   #'A',(A4)+               *Add "A" to the message
-               JSR      HEX_TO_ASC                 *Process register number
-               MOVE.B   #'/',(A4)+               *Add "/" to the message
-               MOVE.W   (SP),D1                  *Get the original word
-               ROL.W    #1,D1                    *Rotate word to put next bit in MSB
-               MOVE.W   D1,(SP)                  *Save the word onto the stack
-               BRA      movemLoopA               *go back to loop   
-
-loopAdone      MOVE.B   #8,D3                    *Reset counter
-               BRA      movemLoopD               *Start the next loop        
-               
-movemLoopD     CMP.B    #0,D3                    *Process data registers
-               BEQ      loopDdone                *Similar to movemLoopA
-               SUB.B    #1,D3
-               LSR      #8,D1
-               LSR      #7,D1
-               CMP.W    #$1,D1
-               BEQ      movemDtrue
-               MOVE.W   (SP),D1
-               ROL.W    #1,D1
-               MOVE.W   D1,(SP)
-               BRA      movemLoopD
-               
-movemDtrue     MOVE.B   #'D',(A4)+               *Add "D" to the message
-               MOVE.B   D3,D1
-               JSR      HEX_TO_ASC
-               MOVE.B   #'/',(A4)+
-               MOVE.W   (SP),D1
-               ROL.W    #1,D1
-               MOVE.W   D1,(SP)
-               BRA      movemLoopD
-
-loopDdone      MOVE.W   (SP)+,D1                
-               RTS                              
-               
-movemdecrLoopD CMP.B    #8,D3                   *Check if the loop is done
-               BEQ      decrDdone               *loop is done
-               MOVE.W   (SP),D1                 *Get the word from the stack
-               LSR      #8,D1
-               LSR      #7,D1                   *Get MSB
-               CMP.W    #$1,D1
-               BEQ      decrDtrue               *Bit is on
-               MOVE.W   (SP),D1                 *get word from stack
-               ROL.W    #1,D1                   *rotate by 1 to get next MSB
-               MOVE.W   D1,(SP)                 *Save word to stack
-               ADD.B    #1,D3                   *Increase counter
-               BRA      movemdecrLoopD          *enter loop again
-               
-decrDtrue      MOVE.B   #'D',(A4)+              
-               MOVE.B   D3,D1
-               JSR      HEX_TO_ASC                *Process the current register
-               MOVE.B   #'/',(A4)+
-               MOVE.W   (SP),D1                 *Get word from stack
-               ROL.W    #1,D1                   *Rotate to get next MSB
-               MOVE.W   D1,(SP)                 *Save word back to stack
-               ADD.B    #1,D3                   *Increase Counter
-               BRA      movemdecrLoopD          *go back to loop
-
-decrDdone      MOVE.B   #0,D3                   *Reset the counter
-               BRA      decrLoopA               *Start next loop  
-
-decrLoopA      CMP.B    #8,D3
-               BEQ      decrAdone               *similar to movemdecrLoopD             
-               MOVE.W   (SP),D1
-               LSR      #8,D1
-               LSR      #7,D1
-               CMP.W    #$1,D1
-               BEQ      decrAtrue
-               MOVE.W   (SP),D1
-               ROL.W    #1,D1
-               MOVE.W   D1,(SP)
-               ADD.B    #1,D3
-               BRA      decrLoopA
-
-decrAtrue      MOVE.B   #'A',(A4)+              *Add "A" to the message
-               MOVE.B   D3,D1
-               JSR      HEX_TO_ASC                *Process the register number
-               MOVE.B   #'/',(A4)+
-               MOVE.W   (SP),D1
-               ROL.W    #1,D1
-               MOVE.W   D1,(SP)
-               ADD.B    #1,D3
-               BRA      decrLoopA
-
-decrAdone      MOVE.W   (SP)+,D1
-               RTS
-
-
-
-HEX_TO_ASC      CMP.B    #$A,D1
-              BLT      DECIMALS
-              ADD.B    #$37,D1
-              MOVE.B   D1,(A4)+
-              RTS
-              
-DECIMALS       ADD.B    #$30,D1
-              MOVE.B   D1,(A4)+
-              RTS
-
-
-
-
-
-
-
-
-
-
-
 
 
 *--------------------------------------------------------------
@@ -1494,7 +1388,9 @@ OP_SIZE     MOVE.W      D5,D1     ; move address to D1
 *               6 bits in the form MMMRRR where M are the mode
 *               bits and R are the register bits stored in D1
 *--------------------------------------------------------------
-EA_MFIRST   MOVE.B      D1,D2   ; save register data
+EA_MFIRST   MOVE.L      D2,-(SP)
+            MOVE.B      D1,D2   ; save register data
+            
 
             LSL.B       #2,D1
             LSL.B       #5,D2
@@ -1527,7 +1423,8 @@ EA_MFIRST   MOVE.B      D1,D2   ; save register data
             BCS         IMM         ; immediate if reg = 1X0
             
             
-DONE_EA     RTS
+DONE_EA     MOVE.L      (SP)+,D2
+            RTS
             
 *--------------------------------------------------------------
 *           PRINT VARIOUS SIZES
