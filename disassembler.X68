@@ -52,8 +52,8 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
             
-            MOVE.L      #$48B9FE00,$4000
-            MOVE.L      #$12345678,$4004
+            MOVE.L      #$4C99FE00,$4000
+
 
 
 RESTART     MOVE.L      #$500,A2
@@ -370,6 +370,7 @@ MOVEM          MOVE.B   #'M',(A4)+
                MOVE.B   #'V',(A4)+
                MOVE.B   #'E',(A4)+
                MOVE.B   #'M',(A4)+              
+               MOVE.B   #$FF,$9F
                MOVE.W   D5,D1                   *copy opcode to D1
                LSR      #6,D1                   *shift to 6th bit
                ANDI.W   #$0001,D1               * 0--Word transfer  1--Long transfer       
@@ -405,6 +406,19 @@ Mem_Reg         MOVE.B      #$00,$9F    ; flag we are doing mem to reg
                 MOVE.W      (A6),D2     ; get mask
                 ADDA.L      #2,A6       ; move past mask
                 
+                AND.B       #$2F,D1
+                CMPI.B      #%111100,D1 ; immediate isn't allowed here
+                BEQ         DATA
+                AND.B       #$07,D1
+                CMPI.B      #%000000,D1 ; Dn isn't allowed here
+                BEQ         DATA
+                CMPI.B      #%001000,D1 ; An isn't allowed here
+                BEQ         DATA
+                CMPI.B      #%100000,D1 ; -(An) isn't allowed here
+                BEQ         DATA
+                
+                MOVE.B      D5,D1
+                
                 JSR         EA_MFIRST   ; print ea
                 
                 MOVE.B      #',',(A4)+
@@ -423,6 +437,20 @@ Reg_Mem_EA      CMPI.B      #$00,$9F
                 MOVE.W      D5,D1
                 SUBA.L      #1,A4
                 MOVE.B      #',',(A4)+
+                
+                AND.B       #$2F,D1
+                CMPI.B      #%111100,D1 ; immediate isn't allowed here
+                BEQ         DATA
+                AND.B       #$07,D1
+                CMPI.B      #%000000,D1 ; Dn isn't allowed here
+                BEQ         DATA
+                CMPI.B      #%001000,D1 ; An isn't allowed here
+                BEQ         DATA
+                CMPI.B      #%011000,D1 ; (An)+ isn't allowed here
+                BEQ         DATA
+                
+                MOVE.B      D5,D1
+                
                 JSR         EA_MFIRST
                 BRA         FINISHED
                 
@@ -721,7 +749,7 @@ NOT_SIZED   MOVE.B      #' ',(A4)+      ; SPACES
             CMPI.B      #%111100,D2
             BEQ         DATA            ; dest cannot be immediate
             LSR.B       #3,D2
-            CMPI.B      #%001,D2        ; dest cannot be An
+            CMPI.B      #%010,D2        ; dest cannot be An
             BEQ         DATA
        
             JSR         EA_MFIRST       ; decode effective address     
@@ -1657,7 +1685,6 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
-
 
 *~Font name~Courier New~
 *~Font size~10~
