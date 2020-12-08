@@ -689,9 +689,9 @@ LSL_COUNTED MOVE.B      #',',(A4)+
             
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
 
             BRA         FINISHED     
             
@@ -702,17 +702,17 @@ LSL_DSHIFT  CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             LSR.L       #7,D1           ; move 9th - 11th bits to front
             LSR.L       #2,D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
             
             MOVE.B      #',',(A4)+
             
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
             
             BRA         FINISHED
             
@@ -726,6 +726,15 @@ LSL_MEM     JSR         WORD_SIZE       ; memory shifts must be word size
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             ANDI.W      #%0000000000111111,D1 ; iso effective address
+            
+            MOVE.B      D1,D2       ; check for invalid modes
+            CMPI.B      #%111100,D2
+            BEQ         DATA        ; dest can't be immediate data
+            LSR.B       #3,D2
+            CMPI.B      #%000,D2    ; dest can't be Dn
+            BEQ         DATA
+            CMPI.B      #%001,D2    ; dest can't be An
+            BEQ         DATA
 
             JSR         EA_MFIRST       ; decode effective address
             
@@ -839,18 +848,9 @@ ASR_COUNTED MOVE.B      #',',(A4)+
             
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            MOVE.B      D1,D2       ; check for invalid modes
-            CMPI.B      #%111100,D2
-            BEQ         DATA        ; dest can't be immediate data
-            LSR.B       #3,D2
-            CMPI.B      #%000,D2    ; dest can't be Dn
-            BEQ         DATA
-            CMPI.B      #%001,D2    ; dest can't be An
-            BEQ         DATA
-            
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
 
             BRA         FINISHED     
             
@@ -861,26 +861,17 @@ ASR_DSHIFT  CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
             LSR.L       #7,D1           ; move 9th - 11th bits to front
             LSR.L       #2,D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
             
             MOVE.B      #',',(A4)+
             
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
-            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            ANDI.W      #%0000000000000111,D1 ; iso register
             
-            MOVE.B      D1,D2       ; check for invalid modes
-            CMPI.B      #%111100,D2
-            BEQ         DATA        ; dest can't be immediate data
-            LSR.B       #3,D2
-            CMPI.B      #%000,D2    ; dest can't be Dn
-            BEQ         DATA
-            CMPI.B      #%001,D2    ; dest can't be An
-            BEQ         DATA
-            
-            JSR         EA_MFIRST       ; decode effective address
+            JSR         EA_MFIRST       ; decode data register
             
             BRA         FINISHED
             
@@ -1514,6 +1505,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
