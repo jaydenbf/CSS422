@@ -155,7 +155,7 @@ SUB     SUB.B     D1,D2
         SUB.B     (A1)+,D1
         SUB.B     -(A1),D1
         SUB.W     D1,D2
-        SUB.W     D1,A1         * INVALID
+        SUB.W     D1,A1
         SUB.W     D1,(A1)
         SUB.W     D1,(A1)+
         SUB.W     D1,-(A1)
@@ -164,7 +164,7 @@ SUB     SUB.B     D1,D2
         SUB.W     (A1)+,D1
         SUB.W     -(A1),D1
         SUB.L     D1,D2
-        SUB.L     D1,A1         * INVALID
+        SUB.L     D1,A1
         SUB.L     D1,(A1)
         SUB.L     D1,(A1)+
         SUB.L     D1,-(A1)
@@ -225,15 +225,15 @@ AND     AND.B     D1,D2
         AND.L     -(A1),D1  
         
 NOT     NOT.B     D1
-        NOT.B     (A1)          * INVALID
+        NOT.B     (A1)
         NOT.B     (A1)+
         NOT.B     -(A1)
         NOT.W     D1
-        NOT.W     (A1)          * INVALID
+        NOT.W     (A1)
         NOT.W     (A1)+
         NOT.W     -(A1)
         NOT.L     D1
-        NOT.L     (A1)          * INVALID
+        NOT.L     (A1)
         NOT.L     (A1)+
         NOT.L     -(A1)
         
@@ -305,6 +305,8 @@ BRA     BRA       label2
 * Put variables and constants here
 
     END    START        ; last line of source
+
+
 
 
 
