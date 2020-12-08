@@ -478,7 +478,6 @@ LEA         MOVE.B      #'L',(A4)+
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
-            MOVE.B      #' ',(A4)+
             
             MOVE.W      D5,D1
             AND.W       #%1111000111000000,D1
@@ -586,80 +585,140 @@ NOT_SIZED   MOVE.B      #' ',(A4)+      ; SPACES
 *--------------------------------------------------------------
 *           LSL
 *--------------------------------------------------------------
-LSL         MOVE.W      D5,D1
-            ANDI.W      #%1111000000011000,D1
-            CMPI.W      #%1110000000001000,D1
+LSL         CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%1111000100111000,D1 ; check if register shift 
+            CMPI.W      #%1110000100001000,D1
+            BNE         LSL_RCHECK
+            BRA         LSL_VALID
+            
+LSL_RCHECK  CMPI.W      #%1110000100101000,D1 ; check if other register shift
+            BNE         LSL_MCHECK
+            BRA         LSL_VALID
+            
+LSL_MCHECK  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%1111111111000000,D1 ; check if memory shift
+            CMPI.W      #%1110001111000000,D1
             BNE         DATA
 
-            MOVE.B      #'L',(A4)+      ; L
+LSL_VALID   MOVE.B      #'L',(A4)+      ; L
             MOVE.B      #'S',(A4)+      ; S
             MOVE.B      #'L',(A4)+      ; L
             CLR.L       D1              ; clear D1
             MOVE.W      D5,D1           ; move address to D1
-            BTST        #8,D1           ; test 8th bit
-            BEQ         DATA            ; if 0, this is LSR, unsupported
-
             LSR.L       #6,D1           ; bring 6th and 7th bit to front
             AND.B       #$03,D1         ; mask bits
-            CMP.B       #$03,D1         ; 11 = memory shift      
-            BEQ         LSL_MEM
-            CMP.B       #$0,D1          ; 00 = byte
-            BEQ         BYTE_SIZE
-            CMP.B       #$01,D1         ; 01 = word
-            BEQ         WORD_SIZE       
-            CMP.B       #$02,D1         ; 10 = long
-            BEQ         LONG_SIZE 
             
-            MOVE.B      #' ',(A4)+      ; SPACES
+            CMP.B       #$03,D1         ; 11 = memory shift
+            BEQ         LSL_MEM     
+            
+LSL_BYTE    CMP.B       #$0,D1          ; 00 = byte
+            BNE         LSL_WORD
+            JSR         BYTE_SIZE
+            BRA         LSL_SIZED    
+            
+LSL_WORD    CMP.B       #$1,D1          ; 01 = word
+            BNE         LSL_LONG
+            JSR         WORD_SIZE
+            BRA         LSL_SIZED       
+            
+LSL_LONG    CMP.B       #$2,D1          ; 10 = long
+            BNE         DATA            ; else invalid
+            JSR         LONG_SIZE
+            BRA         LSL_SIZED
+
+LSL_SIZED   MOVE.B      #' ',(A4)+      ; SPACES
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             
 
 *--------------------------------------------
 *           LSL REGISTER SHIFT  
-LSL_REG     BTST        #5,D1           ; test 5th bit
-            BNE         LSL_DSHIFT      ; if 1, bits 11 - 9 hold data register with count
+LSL_REG     CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1
+            LSR         #5,D1           ; bring 5th bit to front
+            AND.B       #$01,D1         ; mask bits
+            CMP.B       #$01,D1
+            BEQ         LSL_DSHIFT      ; if 1, bits 11 - 9 hold data register with count
                                         ; if 0, bits 11 - 9 hold shift count                              
                                         
 *--------------------------------------------
 *           LSL REGISTER SHIFT - VALUE SHIFT 
-LSL_VSHIFT  LSR.L       #7,D1           ; move 9th - 11th bits to front
+LSL_VSHIFT  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1
+            LSR.L       #7,D1           ; move 9th - 11th bits to front
             LSR.L       #2,D1
             AND.B       #$07,D1         ; mask bits
-            MOVE.B      #'#',(A4)+
+            MOVE.B      #'#',(A4)+      ; immediate data
             CMP.B       #$0,D1          ; 000 = 8
-            MOVE.B      #'8',(A4)+
+            BEQ         LSL_EIGHT
             CMP.B       #$01,D1         ; 001 = 1
-            MOVE.B      #'1',(A4)+       
+            BEQ         LSL_ONE
             CMP.B       #$02,D1         ; 010 = 2
-            MOVE.B      #'2',(A4)+ 
+            BEQ         LSL_TWO
             CMP.B       #$03,D1         ; 011 = 3      
-            MOVE.B      #'3',(A4)+
+            BEQ         LSL_THREE
             CMP.B       #$04,D1         ; 100 = 4      
-            MOVE.B      #'4',(A4)+
+            BEQ         LSL_FOUR
             CMP.B       #$05,D1         ; 101 = 5      
-            MOVE.B      #'5',(A4)+
+            BEQ         LSL_FIVE
             CMP.B       #$06,D1         ; 110 = 6      
-            MOVE.B      #'6',(A4)+
+            BEQ         LSL_SIX
             CMP.B       #$07,D1         ; 111 = 7      
-            MOVE.B      #'7',(A4)+
+            BEQ         LSL_SEVEN
             
-            MOVE.B      #',',(A4)+
+LSL_ONE     MOVE.B      #'1',(A4)+
+            BRA         LSL_COUNTED
+LSL_TWO     MOVE.B      #'2',(A4)+
+            BRA         LSL_COUNTED
+LSL_THREE   MOVE.B      #'3',(A4)+
+            BRA         LSL_COUNTED
+LSL_FOUR    MOVE.B      #'4',(A4)+
+            BRA         LSL_COUNTED
+LSL_FIVE    MOVE.B      #'5',(A4)+
+            BRA         LSL_COUNTED
+LSL_SIX     MOVE.B      #'6',(A4)+
+            BRA         LSL_COUNTED
+LSL_SEVEN   MOVE.B      #'7',(A4)+
+            BRA         LSL_COUNTED
+LSL_EIGHT   MOVE.B      #'8',(A4)+
+            BRA         LSL_COUNTED
             
-            *JSR         EA_MFIRST       ; decode effective address
+LSL_COUNTED MOVE.B      #',',(A4)+
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
 
             BRA         FINISHED     
             
             
 *--------------------------------------------
 *           LSL REGISTER SHIFT - DATA REGISTER SHIFT       
-LSL_DSHIFT  
+LSL_DSHIFT  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            LSR.L       #7,D1           ; move 9th - 11th bits to front
+            LSR.L       #2,D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
+            MOVE.B      #',',(A4)+
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
             
             BRA         FINISHED
             
 *--------------------------------------------
 *           LSL MEMORY SHIFT  
-LSL_MEM     BEQ         WORD_SIZE       ; memory shifts must be word size
+LSL_MEM     JSR         WORD_SIZE       ; memory shifts must be word size
             MOVE.B      #' ',(A4)+      ; SPACES
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
@@ -1303,6 +1362,8 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
+
 
 
 

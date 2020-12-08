@@ -218,6 +218,8 @@ label2
     LSL.W     (A1)+
     LSL.W     -(A1)
     LSL.L     D1,D2
+    LSL.W     $1234
+    LSL.W     #2,D2
     ASL.B     D1,D2
     ASL.W     D1,D2
     ASL.W     (A1)
@@ -280,6 +282,19 @@ label4
 * Put variables and constants here
 
     END    START        ; last line of source
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
