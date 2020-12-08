@@ -21,7 +21,11 @@ START:
 *                       ending address      - $710
 *--------------------------------------------------------------
 
-            MOVE.L      #$FFFFFFFF,$700 ; done for restarting
+            LEA         WLC,A1
+            MOVE.B      #14,D0
+            TRAP        #15         ;   print welcome message
+            
+STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVE.L      #$FFFFFFFF,$704 ; done for restarting
             MOVE.L      #$FFFFFFFF,$708 ; done for restarting
             MOVE.L      #$FFFFFFFF,$712 ; done for restarting
@@ -47,19 +51,11 @@ START:
             MOVEA.L     D0,A4
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
-            
-            MOVE.L      #$4CB8FFFF,$4000
-            MOVE.W      #$5000,$4004
 
 RESTART     MOVE.L      #$500,A2
             MOVE.L      #$000,A4
             MOVE.B      #0,D7       ;   used many times as a counter for loops
             MOVE.B      #0,D6       ;   used as a counter for how many lines we've printed
-
-            LEA         WLC,A1
-            MOVE.B      #14,D0
-            TRAP        #15         ;   print welcome message
-
 
             LEA         SADDR,A1
             MOVE.B      #14,D0
@@ -84,7 +80,7 @@ DECODE      MOVE.B      (A1)+,D1
 
 NOLTR       SUBI.B      #$30,D1     ;   if it's a number subtract 30
 
-LTR         MOVE.B      D1,(A2)+    ;   throw byte into $5000s
+LTR         MOVE.B      D1,(A2)+    ;   throw byte into $500s
             ADDI.B      #1,D7
             CMPI.B      #8,D7
             BEQ         FSADDR      ;   finished decoding
@@ -93,10 +89,25 @@ LTR         MOVE.B      D1,(A2)+    ;   throw byte into $5000s
 INV         LEA         INVALID,A1
             MOVE.B      #14,D0
             TRAP        #15
-            BRA         RESTART
+            BRA         STARTOVER
+            
+OUTRANGE    LEA         OUTRNG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         STARTOVER
+            
+SGTE        LEA         SGTEMSG,A1
+            MOVE.B      #14,D0
+            TRAP        #15
+            BRA         STARTOVER
+
 
 FSADDR      CMPI.B      #$FF,$517
             BNE         FEADDR
+            
+            MOVE.B      $507,D1
+            CMPI.B      #$01,D1
+            BEQ         INV         ; starting address is odd
 
             LEA         EADDR,A1
             MOVE.B      #14,D0
@@ -130,13 +141,29 @@ FSCOMB      CMPI.B      #$FF,$700
             MOVEA.L     #$700,A2
             MOVE.L      D1,(A2)         ; load the start address hex number into $700
             MOVEA.L     #$510,A1
-            MOVE.L      #$00000000,D1   ; clear d1
-            MOVE.L      #$00000000,D2   ; clear d2
+            CLR.L       D1              ; clear d1
+            CLR.L       D2               ; clear d2
             MOVE.B      #0,D7           ; reset counter
             BRA         COMB            ; repeat for ending address
             
 FECOMB      MOVEA.L     #$710,A2
             MOVE.L      D1,(A2)         ; move ending address into $710
+            
+            ; starting address in $700, ending in $710
+            ; check for various invalid inputs
+            MOVE.L      $710,D1
+            CMP.L       $700,D1
+            BLT         SGTE             ; starting address greater than ending address
+            
+            CMPI.L      #$3000,$700
+            BLT         OUTRANGE         ; starting address < $3000
+            
+            CMPI.L      #$FFFFFF,$700
+            BGT         OUTRANGE         ; starting address > $FFFFFF
+            
+            CMPI.L      #$FFFFFF,$710
+            BGT         OUTRANGE         ; ending address > $FFFFFF
+            
             
 *--------------------------------------------------------------
 *           FIND OPCODE
@@ -1431,7 +1458,7 @@ DONE_OPCODE LEA         AGAIN_MSG,A1
             TRAP        #15             ; request input
             
             CMPI.B      #'Y',(A1)
-            BEQ         START           ; if Y was entered, restart
+            BEQ         STARTOVER       ; if Y was entered, restart
           
 
             SIMHALT                 ;   halt simulator
@@ -1721,9 +1748,11 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
             
 
 WLC         DC.B        CR,LF,'Welcome to Team Terminal''s disassembler!',CR,LF,0
-SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
-EADDR       DC.B        CR,LF,'Please enter your even ending address in hexadecimal below. Don''t include 0x or $,',CR,LF,'and make sure to include all 8 digits.',CR,LF,0
-INVALID     DC.B        'Please enter a valid address.',CR,LF,CR,LF,0
+SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal.',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00003000 and $00FFFFFF: ',0
+EADDR       DC.B        'Please enter your even ending address in hexadecimal: ',0
+INVALID     DC.B        CR,LF,'Please make sure your starting address is even.',CR,LF,CR,LF,0
+OUTRNG      DC.B        CR,LF,'Please enter values between $00003000 and $00FFFFFF',CR,LF,CR,LF,0
+SGTEMSG     DC.B        CR,LF,'Please make sure your ending address is greater than your starting address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
 ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
 AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
@@ -1731,37 +1760,6 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 *~Font name~Courier New~
 *~Font size~10~
 *~Tab type~1~
