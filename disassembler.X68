@@ -242,7 +242,7 @@ BITS_110    ASL.W       #1,D1
             BCC         BITS_1100
             BCS         ADD             ; ADD
           
-BITS_111    ASL.W       #4,D1
+BITS_111    ASL.W       #5,D1
             BCC         ASR             ; ASR
             BCS         LSL             ; LSL
 
@@ -1362,6 +1362,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
