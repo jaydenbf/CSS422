@@ -618,12 +618,12 @@ LSL_BYTE    CMP.B       #$0,D1          ; 00 = byte
             JSR         BYTE_SIZE
             BRA         LSL_SIZED    
             
-LSL_WORD    CMP.B       #$1,D1          ; 01 = word
+LSL_WORD    CMP.B       #$01,D1         ; 01 = word
             BNE         LSL_LONG
             JSR         WORD_SIZE
             BRA         LSL_SIZED       
             
-LSL_LONG    CMP.B       #$2,D1          ; 10 = long
+LSL_LONG    CMP.B       #$02,D1         ; 10 = long
             BNE         DATA            ; else invalid
             JSR         LONG_SIZE
             BRA         LSL_SIZED
@@ -641,7 +641,7 @@ LSL_REG     CLR.L       D1              ; clear D1
             AND.B       #$01,D1         ; mask bits
             CMP.B       #$01,D1
             BEQ         LSL_DSHIFT      ; if 1, bits 11 - 9 hold data register with count
-                                        ; if 0, bits 11 - 9 hold shift count                              
+                                        ; if 0, bits 11 - 9 hold immediate shift count                              
                                         
 *--------------------------------------------
 *           LSL REGISTER SHIFT - VALUE SHIFT 
@@ -735,23 +735,148 @@ LSL_MEM     JSR         WORD_SIZE       ; memory shifts must be word size
 *--------------------------------------------------------------
 *           ASR
 *--------------------------------------------------------------
-ASR         MOVE.W      D5,D1
-            ANDI.W      #%1111000000011000,D1
-            CMPI.W      #%1111000000000000,D1
+ASR         CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%1111000100111000,D1 ; check if register shift 
+            CMPI.W      #%1110000000000000,D1
+            BNE         ASR_RCHECK
+            BRA         ASR_VALID
+            
+ASR_RCHECK  CMPI.W      #%1110000000100000,D1 ; check if other register shift
+            BNE         ASR_MCHECK
+            BRA         ASR_VALID
+            
+ASR_MCHECK  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%1111111111000000,D1 ; check if memory shift
+            CMPI.W      #%1110000011000000,D1
             BNE         DATA
 
-            MOVE.B      #'A',(A4)+      ; A
+ASR_VALID   MOVE.B      #'A',(A4)+      ; A
             MOVE.B      #'S',(A4)+      ; S
             MOVE.B      #'R',(A4)+      ; R
             CLR.L       D1              ; clear D1
-            MOVE.W      (A6),D1         ; move address to D1
-            BTST        #8,D1           ; test 8th bit
-            BNE         DATA            ; if 1, this is ASL, unsupported
+            MOVE.W      D5,D1           ; move address to D1
+            LSR.L       #6,D1           ; bring 6th and 7th bit to front
+            AND.B       #$03,D1         ; mask bits
             
+            CMP.B       #$03,D1         ; 11 = memory shift
+            BEQ         ASR_MEM     
+            
+ASR_BYTE    CMP.B       #$0,D1          ; 00 = byte
+            BNE         ASR_WORD
+            JSR         BYTE_SIZE
+            BRA         ASR_SIZED    
+            
+ASR_WORD    CMP.B       #$01,D1         ; 01 = word
+            BNE         ASR_LONG
+            JSR         WORD_SIZE
+            BRA         ASR_SIZED       
+            
+ASR_LONG    CMP.B       #$02,D1         ; 10 = long
+            BNE         DATA            ; else invalid
+            JSR         LONG_SIZE
+            BRA         ASR_SIZED
+
+ASR_SIZED   MOVE.B      #' ',(A4)+      ; SPACES
+            MOVE.B      #' ',(A4)+
+            MOVE.B      #' ',(A4)+
+            
+
+*--------------------------------------------
+*           ASR REGISTER SHIFT  
+ASR_REG     CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1
+            LSR         #5,D1           ; bring 5th bit to front
+            AND.B       #$01,D1         ; mask bits
+            CMP.B       #$01,D1
+            BEQ         ASR_DSHIFT      ; if 1, bits 11 - 9 hold data register with count
+                                        ; if 0, bits 11 - 9 hold immediate shift count                              
+                                        
+*--------------------------------------------
+*           ASR REGISTER SHIFT - VALUE SHIFT 
+ASR_VSHIFT  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1
+            LSR.L       #7,D1           ; move 9th - 11th bits to front
+            LSR.L       #2,D1
+            AND.B       #$07,D1         ; mask bits
+            MOVE.B      #'#',(A4)+      ; immediate data
+            CMP.B       #$0,D1          ; 000 = 8
+            BEQ         ASR_EIGHT
+            CMP.B       #$01,D1         ; 001 = 1
+            BEQ         ASR_ONE
+            CMP.B       #$02,D1         ; 010 = 2
+            BEQ         ASR_TWO
+            CMP.B       #$03,D1         ; 011 = 3      
+            BEQ         ASR_THREE
+            CMP.B       #$04,D1         ; 100 = 4      
+            BEQ         ASR_FOUR
+            CMP.B       #$05,D1         ; 101 = 5      
+            BEQ         ASR_FIVE
+            CMP.B       #$06,D1         ; 110 = 6      
+            BEQ         ASR_SIX
+            CMP.B       #$07,D1         ; 111 = 7      
+            BEQ         ASR_SEVEN
+            
+ASR_ONE     MOVE.B      #'1',(A4)+
+            BRA         ASR_COUNTED
+ASR_TWO     MOVE.B      #'2',(A4)+
+            BRA         ASR_COUNTED
+ASR_THREE   MOVE.B      #'3',(A4)+
+            BRA         ASR_COUNTED
+ASR_FOUR    MOVE.B      #'4',(A4)+
+            BRA         ASR_COUNTED
+ASR_FIVE    MOVE.B      #'5',(A4)+
+            BRA         ASR_COUNTED
+ASR_SIX     MOVE.B      #'6',(A4)+
+            BRA         ASR_COUNTED
+ASR_SEVEN   MOVE.B      #'7',(A4)+
+            BRA         ASR_COUNTED
+ASR_EIGHT   MOVE.B      #'8',(A4)+
+            BRA         ASR_COUNTED
+            
+ASR_COUNTED MOVE.B      #',',(A4)+
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
+
+            BRA         FINISHED     
+            
+            
+*--------------------------------------------
+*           ASR REGISTER SHIFT - DATA REGISTER SHIFT       
+ASR_DSHIFT  CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            LSR.L       #7,D1           ; move 9th - 11th bits to front
+            LSR.L       #2,D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
+            MOVE.B      #',',(A4)+
+            
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000000111,D1 ; iso effective address
+            
+            JSR         EA_MFIRST       ; decode effective address
+            
+            BRA         FINISHED
+            
+*--------------------------------------------
+*           ASR MEMORY SHIFT  
+ASR_MEM     JSR         WORD_SIZE       ; memory shifts must be word size
             MOVE.B      #' ',(A4)+      ; SPACES
             MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
-            
+
+            CLR.L       D1              ; clear D1
+            MOVE.W      D5,D1           ; move address to D1
+            ANDI.W      #%0000000000111111,D1 ; iso effective address
+
             JSR         EA_MFIRST       ; decode effective address
             
             BRA         FINISHED
@@ -1362,6 +1487,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 

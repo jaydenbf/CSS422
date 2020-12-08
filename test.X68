@@ -220,12 +220,14 @@ label2
     LSL.L     D1,D2
     LSL.W     $1234
     LSL.W     #2,D2
-    ASL.B     D1,D2
-    ASL.W     D1,D2
-    ASL.W     (A1)
-    ASL.W     (A1)+
-    ASL.W     -(A1)
-    ASL.L     D1,D2
+    ASR.B     D1,D2
+    ASR.W     D1,D2
+    ASR.W     (A1)
+    ASR.W     (A1)+
+    ASR.W     -(A1)
+    ASR.L     D1,D2
+    ASR.W     $1234
+    ASR.W     #2,D2
 label3
     MOVEM.W   A1-A7,$12
     MOVEM.L   D1-D7,$12
@@ -282,6 +284,8 @@ label4
 * Put variables and constants here
 
     END    START        ; last line of source
+
+
 
 
 
