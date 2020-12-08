@@ -721,7 +721,7 @@ NOT_SIZED   MOVE.B      #' ',(A4)+      ; SPACES
             CMPI.B      #%111100,D2
             BEQ         DATA            ; dest cannot be immediate
             LSR.B       #3,D2
-            CMPI.B      #%010,D2        ; dest cannot be An
+            CMPI.B      #%001,D2        ; dest cannot be An
             BEQ         DATA
        
             JSR         EA_MFIRST       ; decode effective address     
@@ -1657,6 +1657,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 *~Font name~Courier New~
 *~Font size~10~
