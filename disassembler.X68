@@ -1252,16 +1252,25 @@ OR_BCC      MOVE.L      A6,D2       ; address of the next instruction
             ; 8-bit displacement: no extention                   
             AND.W       #$00FF,D1   ; isolate last 8 bits (displacement)
             ADD.B       D1,D2       ; add displacement to pc
-            MOVE.W      D2,D1       ; now have bra address in d1
+            MOVE.L      D2,D1       ; now have bra address in d1
             MOVE.B      #'$',(A4)+
             
             MOVEA.L     #$100,A1                        
+            SWAP        D1
+            JSR         HEX_ASCII
+            
+            MOVEA.L     #$104,A1
+            SWAP        D1
             JSR         HEX_ASCII
             
             MOVE.B      $100,(A4)+
             MOVE.B      $101,(A4)+
             MOVE.B      $102,(A4)+
-            MOVE.B      $103,(A4)+  ; print out the long
+            MOVE.B      $103,(A4)+
+            MOVE.B      $104,(A4)+
+            MOVE.B      $105,(A4)+
+            MOVE.B      $106,(A4)+
+            MOVE.B      $107,(A4)+  ; print out the long
             
             BRA         FINISHED
             
@@ -1270,18 +1279,27 @@ BRA_16      ; 16-bit displacement: word extention
             MOVE.W      (A6),D1     ; get next word
             ADDA.L      #2,A6       ; increment current address
             
-            ADD.W       D2,D1       ; add program counter to displacement
-                                    ; now have bra address in d1
+            ADD.W       D1,D2       ; add displacement to pc
+            MOVE.L      D2,D1       ; now have bra address in d1
             
             MOVE.B      #'$',(A4)+
-                        
+            
             MOVEA.L     #$100,A1                        
+            SWAP        D1
+            JSR         HEX_ASCII
+            
+            MOVEA.L     #$104,A1
+            SWAP        D1
             JSR         HEX_ASCII
             
             MOVE.B      $100,(A4)+
             MOVE.B      $101,(A4)+
             MOVE.B      $102,(A4)+
-            MOVE.B      $103,(A4)+  ; print out the word
+            MOVE.B      $103,(A4)+
+            MOVE.B      $104,(A4)+
+            MOVE.B      $105,(A4)+
+            MOVE.B      $106,(A4)+
+            MOVE.B      $107,(A4)+  ; print out the long
             
             BRA         FINISHED
             
@@ -1289,8 +1307,9 @@ BRA_32      ; 32-bit displacement: long extention
             MOVE.L      (A6),D1     ; get next long
             ADDA.L      #4,A6       ; increment current address
             
-            ADD.L       D2,D1       ; add program counter to displacement
-                                    ; now have bra address in d1
+            ADD.L       D1,D2       ; add displacement to pc
+            MOVE.L      D2,D1       ; now have bra address in d1
+            
             MOVE.B      #'$',(A4)+                        
             
             MOVEA.L     #$100,A1                        
