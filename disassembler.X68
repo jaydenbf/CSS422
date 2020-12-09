@@ -52,8 +52,8 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
             
-            MOVE.L      #$4C99FE00,$4000
-
+            MOVE.L      #$48B8FE00,$4000
+            MOVE.L      #$0012DC12,$4004
 
 
 RESTART     MOVE.L      #$500,A2
@@ -406,10 +406,10 @@ Mem_Reg         MOVE.B      #$00,$9F    ; flag we are doing mem to reg
                 MOVE.W      (A6),D2     ; get mask
                 ADDA.L      #2,A6       ; move past mask
                 
-                AND.B       #$2F,D1
+                AND.B       #%111111,D1
                 CMPI.B      #%111100,D1 ; immediate isn't allowed here
                 BEQ         DATA
-                AND.B       #$07,D1
+                AND.B       #%111000,D1
                 CMPI.B      #%000000,D1 ; Dn isn't allowed here
                 BEQ         DATA
                 CMPI.B      #%001000,D1 ; An isn't allowed here
@@ -438,10 +438,10 @@ Reg_Mem_EA      CMPI.B      #$00,$9F
                 SUBA.L      #1,A4
                 MOVE.B      #',',(A4)+
                 
-                AND.B       #$2F,D1
+                AND.B       #%111111,D1
                 CMPI.B      #%111100,D1 ; immediate isn't allowed here
                 BEQ         DATA
-                AND.B       #$07,D1
+                AND.B       #%111000,D1
                 CMPI.B      #%000000,D1 ; Dn isn't allowed here
                 BEQ         DATA
                 CMPI.B      #%001000,D1 ; An isn't allowed here
@@ -1675,7 +1675,7 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
 WLC         DC.B        CR,LF,'Welcome to Team Terminal''s disassembler!',CR,LF,0
 SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal.',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00003000 and $00FFFFFF: ',0
 EADDR       DC.B        'Please enter your ending address in hexadecimal:      ',0
-INVALID     DC.B        CR,LF,'Please make sure your starting address is even.',CR,LF,CR,LF,0
+INVALID     DC.B        CR,LF,'Your address is invalid. Please try again.',CR,LF,CR,LF,0
 OUTRNG      DC.B        CR,LF,'Please enter values between $00003000 and $00FFFFFF',CR,LF,CR,LF,0
 SGTEMSG     DC.B        CR,LF,'Please make sure your ending address is greater than your starting address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
@@ -1685,6 +1685,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 *~Font name~Courier New~
