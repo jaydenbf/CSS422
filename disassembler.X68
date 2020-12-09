@@ -52,8 +52,8 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
             
-            MOVE.L      #$48B8FE00,$4000
-            MOVE.L      #$0012DC12,$4004
+            MOVE.L      #$21FCFFFF,$4000
+            MOVE.L      #$FFFF0700,$4004
 
 
 RESTART     MOVE.L      #$500,A2
@@ -328,7 +328,6 @@ MOVE_LONG   CMP.B       #$2,D1         ; 10 = long
             JSR         LONG_SIZE
             
 MOVE_SIZED  MOVE.B      #' ',(A4)+      ; SPACES
-            MOVE.B      #' ',(A4)+
             MOVE.B      #' ',(A4)+
             
             CLR.L       D1              ; clear D1
@@ -1536,8 +1535,8 @@ AN_PRE      MOVE.B      #$2D,(A4)+       ; -
 IMM         ; if it's immediate we need to find the size
             MOVEA.L     #$00000000,A1
 CHECK_PD    CMPI.B      #'.',(A1)+  ; find period in the current printed opcode
-            BNE         CHECK_PD
-            ADDA.L      #1,A1       ; we now have B W or L in (A1)
+            BNE         CHECK_PD    
+                                    ; we now have B W or L in (A1)
 
             CMPI.B      #'L',(A1)   
             BEQ         IMM_LONG    ; if it's L we need to pull the next long
@@ -1572,7 +1571,7 @@ IMM_LONG    MOVE.L      (A6),D1     ; pull next long
             SWAP        D1
             JSR         HEX_ASCII   ; convert upper word into ascii at $100-$103
             
-            ADDA.L      #2,A1
+            MOVEA.L     #$104,A1
             SWAP        D1
             JSR         HEX_ASCII   ; conver lower word into ascii at $104-$107
             
