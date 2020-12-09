@@ -155,7 +155,6 @@ SUB     SUB.B     D1,D2
         SUB.B     (A1)+,D1
         SUB.B     -(A1),D1
         SUB.W     D1,D2
-        SUB.W     D1,A1
         SUB.W     D1,(A1)
         SUB.W     D1,(A1)+
         SUB.W     D1,-(A1)
@@ -164,7 +163,6 @@ SUB     SUB.B     D1,D2
         SUB.W     (A1)+,D1
         SUB.W     -(A1),D1
         SUB.L     D1,D2
-        SUB.L     D1,A1
         SUB.L     D1,(A1)
         SUB.L     D1,(A1)+
         SUB.L     D1,-(A1)
@@ -305,6 +303,7 @@ BRA     BRA       label2
 * Put variables and constants here
 
     END    START        ; last line of source
+
 
 
 
