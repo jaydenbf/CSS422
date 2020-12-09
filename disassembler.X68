@@ -51,9 +51,6 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVEA.L     D0,A4
             MOVEA.L     D0,A5
             MOVEA.L     D0,A6
-            
-            MOVE.L      #$21FCFFFF,$4000
-            MOVE.L      #$FFFF0700,$4004
 
 
 RESTART     MOVE.L      #$500,A2
@@ -1703,8 +1700,6 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
-
-
 
 *~Font name~Courier New~
 *~Font size~10~
