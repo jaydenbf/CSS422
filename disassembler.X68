@@ -1698,7 +1698,7 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
             
 
 WLC         DC.B        CR,LF,'Welcome to Team Terminal''s disassembler!',CR,LF,0
-SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal.',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00000000 and $00FFFFFF: ',0
+SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal (capital letters).',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00000000 and $00FFFFFF: ',0
 EADDR       DC.B        'Please enter your ending address in hexadecimal:      ',0
 INVALID     DC.B        CR,LF,'Your address is invalid. Please try again.',CR,LF,CR,LF,0
 OUTRNG      DC.B        CR,LF,'Please enter values between $00000000 and $00FFFFFF',CR,LF,CR,LF,0
@@ -1710,6 +1710,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 *~Font name~Courier New~
