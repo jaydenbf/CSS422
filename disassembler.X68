@@ -1705,11 +1705,12 @@ OUTRNG      DC.B        CR,LF,'Please enter values between $00000000 and $00FFFF
 SGTEMSG     DC.B        CR,LF,'Please make sure your ending address is greater than your starting address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
 ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
-AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
+AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [capital Y for yes] ',0
 
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 
 
