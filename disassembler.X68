@@ -30,11 +30,17 @@ STARTOVER   MOVE.L      #$FFFFFFFF,$700 ; done for restarting
             MOVE.L      #$FFFFFFFF,$708 ; done for restarting
             MOVE.L      #$FFFFFFFF,$712 ; done for restarting
             MOVE.L      #$FFFFFFFF,$716 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$600 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$604 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$608 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$612 ; done for restarting
+            MOVE.L      #$FFFFFFFF,$616 ; done for restarting
             MOVE.L      #$FFFFFFFF,$500 ; done for restarting
             MOVE.L      #$FFFFFFFF,$504 ; done for restarting
             MOVE.L      #$FFFFFFFF,$508 ; done for restarting
             MOVE.L      #$FFFFFFFF,$512 ; done for restarting
             MOVE.L      #$FFFFFFFF,$516 ; done for restarting
+            
 
             CLR.L       D0
             CLR.L       D1
@@ -65,6 +71,9 @@ RESTART     MOVE.L      #$500,A2
             MOVE.L      #$600,A1
             MOVE.B      #2,D0
             TRAP        #15         ;   read number from keyboard into $600
+            
+            CMPI.B      #$FF,$609
+            BNE         INV
             
 DECODE      MOVE.B      (A1)+,D1
             CMPI.B      #$30,D1     ;   is D1 < 30
@@ -120,6 +129,10 @@ FSADDR      CMPI.B      #$FF,$517
             
             MOVE.B      #2,D0
             TRAP        #15         ;   read number from keyboard into $600
+
+            CMPI.B      #$FF,$609
+            BNE         INV
+
             
             BRA         DECODE
 
@@ -156,8 +169,8 @@ FECOMB      MOVEA.L     #$710,A2
             CMP.L       $700,D1
             BLT         SGTE             ; starting address greater than ending address
             
-            CMPI.L      #$3000,$700
-            BLT         OUTRANGE         ; starting address < $3000
+            *CMPI.L      #$3000,$700
+            *BLT         OUTRANGE         ; starting address < $3000
             
             CMPI.L      #$FFFFFF,$700
             BGT         OUTRANGE         ; starting address > $FFFFFF
@@ -203,9 +216,6 @@ FINDOP      LEA         CRLF,A1
             MOVE.W      (A6),D1         ; load 4 hex-digit opcode into d1 for decoding
             MOVE.W      (A6),D5         ; load 4 hex-digit opcode into d5 for storage (needed for some opcodes)
             ADDA.W      #2,A6           ; move past current opcode
-            
-                        
-            *BRA         DATA            ; test purposes, should delete
             
             
             ; begin decoding
@@ -1688,10 +1698,10 @@ HEXNUM4     ADDI.B      #$30,D2     ; first part in ascii in d2
             
 
 WLC         DC.B        CR,LF,'Welcome to Team Terminal''s disassembler!',CR,LF,0
-SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal.',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00003000 and $00FFFFFF: ',0
+SADDR       DC.B        CR,LF,'Please enter your even starting address in hexadecimal.',CR,LF,'Don''t include 0x or $, and make sure to include all 8 digits.',CR,LF,'Your address must be between $00000000 and $00FFFFFF: ',0
 EADDR       DC.B        'Please enter your ending address in hexadecimal:      ',0
 INVALID     DC.B        CR,LF,'Your address is invalid. Please try again.',CR,LF,CR,LF,0
-OUTRNG      DC.B        CR,LF,'Please enter values between $00003000 and $00FFFFFF',CR,LF,CR,LF,0
+OUTRNG      DC.B        CR,LF,'Please enter values between $00000000 and $00FFFFFF',CR,LF,CR,LF,0
 SGTEMSG     DC.B        CR,LF,'Please make sure your ending address is greater than your starting address.',CR,LF,CR,LF,0
 CRLF        DC.B        CR,LF,0
 ENTER_MSG   DC.B        CR,LF,'Press enter to print 10 more lines',CR,LF,0
@@ -1700,6 +1710,7 @@ AGAIN_MSG   DC.B        CR,LF,'Would you like to disassemble again? [Y/N] ',0
 ENTER_PH    DC.B        1   ; placeholder for hitting enter
 
             END         START
+
 
 *~Font name~Courier New~
 *~Font size~10~
